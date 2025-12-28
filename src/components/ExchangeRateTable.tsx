@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useFavorites } from '@/hooks/use-favorites'
+import { AddToSharedWatchlist } from '@/components/AddToSharedWatchlist'
 
 type SortField = 'country' | 'currency' | 'currencyCode' | 'rate'
 type SortDirection = 'asc' | 'desc'
@@ -118,6 +119,7 @@ export function ExchangeRateTable({ rates, showFavoritesOnly = false }: Exchange
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">
               <TableHead className="w-12"></TableHead>
+              <TableHead className="w-12"></TableHead>
               <TableHead 
                 className="cursor-pointer select-none font-semibold text-foreground"
                 onClick={() => handleSort('country')}
@@ -166,6 +168,9 @@ export function ExchangeRateTable({ rates, showFavoritesOnly = false }: Exchange
                       className={isFavorite(rate.currencyCode) ? "text-yellow-500" : "text-muted-foreground"}
                     />
                   </Button>
+                </TableCell>
+                <TableCell className="w-12">
+                  <AddToSharedWatchlist currencyCode={rate.currencyCode} />
                 </TableCell>
                 <TableCell className="font-medium">{rate.country}</TableCell>
                 <TableCell>{rate.currency}</TableCell>

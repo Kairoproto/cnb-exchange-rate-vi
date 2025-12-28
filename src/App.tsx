@@ -28,21 +28,23 @@ import { CurrencyHeatmap } from '@/components/CurrencyHeatmap'
 import { NotificationCenter } from '@/components/NotificationCenter'
 import { AutoRefreshScheduler } from '@/components/AutoRefreshScheduler'
 import { KeyboardShortcuts } from '@/components/KeyboardShortcuts'
+import { CollaborationDashboard } from '@/components/CollaborationDashboard'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck, Star, ChartPieSlice, Bell, Sparkle, ClockCounterClockwise, Keyboard } from '@phosphor-icons/react'
+import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck, Star, ChartPieSlice, Bell, Sparkle, ClockCounterClockwise, Keyboard, Users } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 
-type ViewMode = 'current' | 'comparison' | 'analytics' | 'ai' | 'history'
+type ViewMode = 'current' | 'comparison' | 'analytics' | 'ai' | 'history' | 'collaborate'
 
 function App() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [viewMode, setViewMode] = useState<ViewMode>('current')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [sharedWatchlistCurrencies, setSharedWatchlistCurrencies] = useState<string[]>([])
   const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null)
   const { data, isLoading, error, refetch } = useExchangeRates(selectedDate)
   const comparison = useComparisonRates()
@@ -137,7 +139,7 @@ function App() {
           </div>
 
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
-            <TabsList className="grid w-full max-w-4xl grid-cols-5 h-12">
+            <TabsList className="grid w-full max-w-5xl grid-cols-6 h-12">
               <TabsTrigger value="current" className="gap-2 text-base">
                 <ChartLine size={20} weight="duotone" />
                 Current Rates
@@ -157,6 +159,10 @@ function App() {
               <TabsTrigger value="history" className="gap-2 text-base">
                 <ClockCounterClockwise size={20} weight="duotone" />
                 History
+              </TabsTrigger>
+              <TabsTrigger value="collaborate" className="gap-2 text-base">
+                <Users size={20} weight="duotone" />
+                Collaborate
               </TabsTrigger>
             </TabsList>
 
@@ -394,6 +400,27 @@ function App() {
               )}
               {!data && isLoading && (
                 <ExchangeRateTableSkeleton />
+              )}
+            </TabsContent>
+
+            <TabsContent value="collaborate" className="space-y-8 mt-8">
+              <CollaborationDashboard onWatchlistSelect={setSharedWatchlistCurrencies} />
+              
+              {sharedWatchlistCurrencies.length > 0 && data && (
+                <Card className="shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-2xl">Shared Watchlist Currencies</CardTitle>
+                    <CardDescription>
+                      Viewing currencies from selected shared watchlist
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ExchangeRateTable 
+                      rates={data.rates.filter(r => sharedWatchlistCurrencies.includes(r.currencyCode))} 
+                      showFavoritesOnly={false}
+                    />
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
           </Tabs>

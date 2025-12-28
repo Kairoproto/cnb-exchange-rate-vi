@@ -8,7 +8,7 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 3. **Interactive** - Practical currency conversion tools that make exchange rate data immediately useful
 
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-- This application has evolved into a sophisticated financial data platform with multiple specialized views (Current Rates, Comparison Mode, Analytics, AI Insights, History), real-time data processing, persistent user preferences (favorites, alerts), advanced filtering and search, interactive visualizations, multi-format exports, intelligent alert systems, cutting-edge AI-powered analysis features, comprehensive notification management, auto-refresh scheduling, keyboard shortcuts for power users, and visual currency performance heatmaps. It demonstrates complex state management, batch API processing, natural language processing integration, and provides professional-grade analysis tools with artificial intelligence capabilities.
+- This application has evolved into a sophisticated financial data platform with multiple specialized views (Current Rates, Comparison Mode, Analytics, AI Insights, History, Collaborate), real-time data processing, persistent user preferences (favorites, alerts, shared watchlists), advanced filtering and search, interactive visualizations, multi-format exports, intelligent alert systems, cutting-edge AI-powered analysis features, comprehensive notification management, auto-refresh scheduling, keyboard shortcuts for power users, visual currency performance heatmaps, and multi-user collaboration with role-based permissions. It demonstrates complex state management, batch API processing, natural language processing integration, collaborative data sharing, user permission management, invitation systems, and provides professional-grade analysis tools with artificial intelligence capabilities and team collaboration features.
 
 ## Essential Features
 
@@ -170,8 +170,15 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Functionality**: Power user feature providing keyboard shortcuts for common actions and navigation throughout the app, with accessible help dialog listing all available shortcuts
 - **Purpose**: Dramatically speeds up workflow for frequent users who prefer keyboard navigation over mouse clicks
 - **Trigger**: Shortcuts always active when not focused on input fields; help dialog opened with "?" key or Shortcuts button
-- **Progression**: User presses shortcut key → Action executes immediately → Available shortcuts include: "/" (focus search), "r" (refresh data), "e" (export), "f" (toggle favorites), "1-5" (switch tabs), "?" (show shortcuts help) → Shortcuts help dialog displays categorized list (Navigation/Actions/Views/General) → Each shortcut shown with key badge and description → Dialog explains shortcuts work when not in input fields → Shortcuts button in header provides discoverable access
-- **Success criteria**: All shortcuts respond instantly; shortcuts disabled when typing in input fields to prevent conflicts; "?" opens help dialog with full shortcut list; shortcuts organized into logical categories; clean badge design for key representations; help dialog scrollable for long list; Esc closes dialogs; number keys (1-5) switch between all five tabs; "r" refreshes current view appropriately; "f" toggles favorites filter in current rates view; "/" focuses search input if available; shortcuts persist across navigation; help button accessible in header; mobile users see shortcuts button but understand keyboard shortcuts are desktop-only; no conflicts with browser shortcuts; visual feedback when actions triggered; shortcuts work across all tabs where applicable
+- **Progression**: User presses shortcut key → Action executes immediately → Available shortcuts include: "/" (focus search), "r" (refresh data), "e" (export), "f" (toggle favorites), "1-6" (switch tabs), "?" (show shortcuts help) → Shortcuts help dialog displays categorized list (Navigation/Actions/Views/General) → Each shortcut shown with key badge and description → Dialog explains shortcuts work when not in input fields → Shortcuts button in header provides discoverable access
+- **Success criteria**: All shortcuts respond instantly; shortcuts disabled when typing in input fields to prevent conflicts; "?" opens help dialog with full shortcut list; shortcuts organized into logical categories; clean badge design for key representations; help dialog scrollable for long list; Esc closes dialogs; number keys (1-6) switch between all six tabs; "r" refreshes current view appropriately; "f" toggles favorites filter in current rates view; "/" focuses search input if available; shortcuts persist across navigation; help button accessible in header; mobile users see shortcuts button but understand keyboard shortcuts are desktop-only; no conflicts with browser shortcuts; visual feedback when actions triggered; shortcuts work across all tabs where applicable
+
+### Multi-User Collaboration Features
+- **Functionality**: Comprehensive collaboration system enabling users to create, share, and manage shared watchlists with team members; supports both private (invite-only) and public (discoverable) watchlists with role-based permissions (Owner, Editor, Viewer); includes real-time member management, invitation system, and seamless currency addition from the main exchange rate table
+- **Purpose**: Enables teams and communities to collaboratively track and monitor currency portfolios; facilitates knowledge sharing and coordination for financial decisions; allows organizations to maintain standardized watchlists across team members
+- **Trigger**: User navigates to "Collaborate" tab; creates new shared watchlist; invites members; browses public watchlists; adds currencies to shared lists
+- **Progression**: User clicks Collaborate tab → Views dashboard with invitation notifications badge → Sees list of shared watchlists they're a member of (or empty state) → Creates new watchlist with "Create Shared Watchlist" button → Dialog opens with name, description, public/private toggle → Sets visibility (public = discoverable by anyone, private = invite-only) → Watchlist created and user becomes owner → Owner invites team members by GitHub username (future: via email/link) → Invitees receive notification in dashboard → Accept/decline invitations → Join public watchlists with single click from browse section → Select watchlist from dashboard to view its currencies → Filter main table to show only shared watchlist currencies → Add/remove currencies directly from exchange rate table using "Add to Watchlist" dropdown → Owner manages members (change roles, remove members) → Members see role badges (Owner/Editor/Viewer) → Editors can add/remove currencies → Viewers have read-only access → Real-time updates show member activity timestamps → Leave watchlists (non-owners) or delete (owners only) with confirmation → Watchlist cards show member count, currency count, last update time, and preview of tracked currencies
+- **Success criteria**: Watchlists persist across sessions using KV storage; public/private visibility toggles work correctly; role-based permissions enforced (Owner: full control, Editor: modify currencies, Viewer: read-only); invitation system with pending/accepted/declined states; invitation notifications with accept/decline buttons; public watchlist browser shows all public lists with owner info; one-click join for public watchlists; watchlist selection filters exchange rate table; inline currency addition from table via dropdown menu (shows checkmarks for currencies already in list); member management dialog for owners; remove member functionality; leave watchlist for non-owners; delete watchlist for owners with confirmation; watchlist cards display all metadata (name, description, member count, currency count, preview badges); visual role indicators with icons (Crown for owner, Pencil for editor, Eye for viewer); last activity timestamps using relative time (e.g., "2 hours ago"); empty states guide users to create first watchlist; smooth transitions between tabs; responsive grid layout for watchlist cards; mobile-friendly invitation cards; collaboration tab includes helpful info alert explaining features; watchlists support unlimited members; currency additions trigger toast notifications; all actions have loading states; errors handled gracefully with user-friendly messages; works seamlessly with existing favorites system (independent features)
 
 ## Edge Case Handling
 
@@ -275,7 +282,31 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Keyboard Shortcuts Dialog**: Help dialog accessible via "?" key and button in header
 - **Keyboard Shortcuts Conflicts**: No conflicts with browser or OS-level shortcuts
 - **Keyboard Shortcuts Mobile**: Shortcuts button visible but shortcuts only work on desktop with keyboard
-- **Keyboard Shortcuts Tab Switching**: Number keys (1-5) correctly switch between all five tabs
+- **Keyboard Shortcuts Tab Switching**: Number keys (1-6) correctly switch between all six tabs
+- **Shared Watchlist Empty Name**: Prevent creating watchlist without name
+- **Shared Watchlist Duplicate Names**: Allow duplicate names (distinguished by IDs internally)
+- **Shared Watchlist No Members**: Never allow empty member list (creator is always first owner)
+- **Shared Watchlist Owner Leaving**: Prevent owner from leaving, must delete instead
+- **Shared Watchlist Delete Confirmation**: Confirm before deleting to prevent accidents
+- **Shared Watchlist Invite Non-existent User**: Accept any username, user must exist to accept invite
+- **Shared Watchlist Invite Existing Member**: Block inviting users who are already members
+- **Shared Watchlist Duplicate Currency**: Silently prevent adding currency already in list
+- **Shared Watchlist Remove Last Currency**: Allow empty currency list in watchlist
+- **Shared Watchlist Permission Checks**: Enforce viewer cannot edit, only owner can invite/manage
+- **Shared Watchlist Public Discovery**: Only show truly public watchlists in browse section
+- **Shared Watchlist Join Already Member**: Prevent joining watchlist user is already in
+- **Shared Watchlist Persistence**: All watchlists and invites survive page refreshes via KV storage
+- **Shared Watchlist Member Role Changes**: Only owner can change roles, cannot change own role
+- **Shared Watchlist Remove Owner**: Prevent removing the owner from member list
+- **Shared Watchlist Concurrent Edits**: Last write wins for currency additions (acceptable for MVP)
+- **Shared Watchlist Long Names**: Truncate long watchlist names in cards with ellipsis
+- **Shared Watchlist Many Currencies**: Show first 10 currency badges with "+X more" indicator
+- **Shared Watchlist No Watchlists**: Show helpful empty state encouraging creation
+- **Shared Watchlist No Invites**: Hide invitations section when no pending invites
+- **Shared Watchlist Filter By Watchlist**: Successfully filter main table when watchlist selected
+- **Shared Watchlist Deselect**: Click selected watchlist again to deselect and show all currencies
+- **Shared Watchlist Tab Switching**: Preserve selected watchlist when switching between tabs
+- **Six-Tab Navigation**: Ensure smooth transitions between all six tabs including new Collaborate tab
 - **Keyboard Shortcuts Focus Management**: Search focus shortcut works when search input exists
 
 ## Design Direction
@@ -371,15 +402,15 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - CalendarCheck for comparison mode tab
   - CalendarBlank for date selector
   - CalendarPlus for empty comparison state
-  - Plus for add date button and create alert
-  - X for remove date badges and clear search
-  - Trash for clear all comparison dates and delete alerts
+  - Plus for add date button, create alert, and add currency to watchlist
+  - X for remove date badges, clear search, and decline invitations
+  - Trash for clear all comparison dates, delete alerts, and delete watchlists
   - Info for informational alerts
   - Star (outline/filled) for favorites/watchlist feature with yellow color for filled state
   - MagnifyingGlass for search functionality
-  - Globe for total currencies stat
-  - Bell for rate alerts feature
-  - CheckCircle for triggered alerts
+  - Globe for total currencies stat and public watchlists
+  - Bell for rate alerts feature and invitation notifications
+  - CheckCircle for triggered alerts and accepted invitations
   - Sparkle for AI features and insights
   - Brain for AI predictions feature
   - ChatCircleDots for AI chat assistant
@@ -387,6 +418,17 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - PaperPlaneRight for sending chat messages
   - User for user chat messages
   - ArrowsClockwise for stable/neutral trend in predictions
+  - Users for collaboration features and shared watchlists
+  - Crown for watchlist owner role
+  - PencilSimple for watchlist editor role
+  - Eye for watchlist viewer role
+  - Lock for private watchlists
+  - UserPlus for invite members and add to shared watchlist
+  - SignIn for joining public watchlists
+  - SignOut for leaving watchlists
+  - Check for currencies already in shared watchlist
+  - Calendar for watchlist metadata (currency count)
+  - Clock for last activity timestamps
   - FloppyDisk for save to history action
   - ClockCounterClockwise for prediction history tab and feature
   - CheckCircle for high accuracy predictions
@@ -456,6 +498,25 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Prediction comparison charts maintain readability on mobile devices
   - Currency heatmap grid stacks to 2 columns on tablet, 1 column on mobile
   - Currency heatmap list view maintains full width with horizontal scroll if needed
+  - Currency heatmap sort controls and view toggle stack appropriately on small screens
+  - Notification center cards stack properly with full-width layout on mobile
+  - Notification center action buttons remain accessible with proper touch targets
+  - Auto-refresh scheduler metrics stack vertically on mobile for readability
+  - Auto-refresh scheduler controls (toggle, select) full-width on small screens
+  - Keyboard shortcuts button visible in mobile header but explains desktop-only feature
+  - Keyboard shortcuts help dialog fully scrollable on mobile with touch-friendly dismiss
+  - Collaborate tab includes 6th tab in responsive navigation with proper text sizing
+  - Tab navigation accommodates six tabs with appropriate font scaling on mobile
+  - Shared watchlist cards stack to single column on mobile with full-width layout
+  - Watchlist creation dialog fully scrollable and usable on mobile screens
+  - Public/private toggle in watchlist dialog has large touch target
+  - Watchlist invitation cards stack properly with touch-friendly accept/decline buttons
+  - Watchlist member avatars and info display clearly on small screens
+  - Add to shared watchlist dropdown properly aligned on mobile
+  - Watchlist filter selection works smoothly on touch devices
+  - Collaboration dashboard info alert wraps text appropriately on narrow screens
+  - Browse public watchlists grid stacks to single column on mobile
+  - All collaboration action buttons maintain 44px minimum touch target on mobile
   - Currency heatmap sort controls and view toggle stack appropriately on small screens
   - Notification center cards stack properly with full-width layout on mobile
   - Notification center action buttons remain accessible with proper touch targets
