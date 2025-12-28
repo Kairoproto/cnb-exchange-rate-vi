@@ -5,10 +5,10 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer frontend applicati
 **Experience Qualities**:
 1. **Professional** - Clean, business-focused design that conveys trust and reliability for financial data
 2. **Efficient** - Fast loading with clear feedback states and minimal distractions from the core data
-3. **Transparent** - Clear communication about demo mode and backend requirements
+3. **Interactive** - Practical currency conversion tools that make exchange rate data immediately useful
 
 **Complexity Level**: Light Application (multiple features with basic state)
-- This is a focused data display application with API integration, error handling, loading states, and data filtering/sorting capabilities. The frontend demonstrates production-ready patterns while using mock data until the .NET backend is implemented.
+- This is a focused data display and conversion application with API integration, error handling, loading states, data filtering/sorting, and real-time currency conversion. The frontend demonstrates production-ready patterns while using mock data until the .NET backend is implemented.
 
 ## Essential Features
 
@@ -40,6 +40,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer frontend applicati
 - **Progression**: Data received → Date extracted → Formatted and prominently displayed
 - **Success criteria**: Date clearly visible and formatted in readable format
 
+### Currency Converter Calculator
+- **Functionality**: Converts amounts between any two currencies using live exchange rates
+- **Purpose**: Provides immediate practical value by allowing users to calculate currency conversions
+- **Trigger**: User enters amount and selects currencies
+- **Progression**: User inputs amount → Selects from/to currencies → Real-time calculation displayed → Result shown with clear formatting
+- **Success criteria**: Accurate conversions using CNB rates, instant updates on input changes, all currencies available including CZK
+
 ## Edge Case Handling
 
 - **API Timeout/Network Failure**: Display friendly error message with retry button and troubleshooting hints
@@ -47,6 +54,8 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer frontend applicati
 - **Empty Data Set**: Show empty state with explanation and refresh action
 - **Slow Connection**: Progressive loading indicator showing fetch is in progress
 - **Stale Data**: Display last update timestamp to inform users of data freshness
+- **Invalid Conversion Input**: Handle non-numeric or negative amounts gracefully without errors
+- **Same Currency Conversion**: Allow but show 1:1 conversion correctly
 
 ## Design Direction
 
@@ -94,6 +103,9 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Badge component for currency codes
   - Alert component for error messages
   - Skeleton component for loading states
+  - Input component for currency converter amount entry
+  - Select component for currency selection dropdowns
+  - Label component for form field labels
 - **Customizations**: 
   - Custom table styling with alternating row backgrounds for easier scanning
   - Monospace font override for numeric columns
@@ -107,6 +119,8 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Warning for error states  
   - Bank for CNB branding
   - CaretUp/CaretDown for sortable columns
+  - ArrowsLeftRight for currency swap functionality
+  - Equals for conversion result indicator
 - **Spacing**: 
   - Container padding: p-6 (24px)
   - Card spacing: gap-6 between major sections
@@ -118,3 +132,6 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Increase touch targets to minimum 44px
   - Reduce padding to p-4 on mobile
   - Show fewer columns by default with expand option
+  - Stack converter input fields vertically
+  - Show currency swap button below fields on mobile
+  - Ensure dropdowns are touch-friendly with large hit areas

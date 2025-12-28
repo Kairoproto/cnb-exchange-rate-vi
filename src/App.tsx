@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useExchangeRates } from '@/hooks/use-exchange-rates'
 import { ExchangeRateTable } from '@/components/ExchangeRateTable'
 import { ExchangeRateTableSkeleton } from '@/components/ExchangeRateTableSkeleton'
+import { CurrencyConverter } from '@/components/CurrencyConverter'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,6 +67,12 @@ function App() {
             Refresh
           </Button>
         </div>
+
+{!isLoading && !error && data && (
+          <div className="mb-8">
+            <CurrencyConverter rates={data.rates} />
+          </div>
+        )}
 
         <Card className="shadow-lg">
           <CardHeader>

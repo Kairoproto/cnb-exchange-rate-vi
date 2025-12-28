@@ -16,6 +16,7 @@ This application demonstrates best practices for API integration, error handling
 ## Features
 
 ✅ **API Integration** - Ready to consume .NET backend endpoints  
+✅ **Currency Converter** - Real-time currency conversion calculator using live exchange rates  
 ✅ **Sortable Table** - Click column headers to sort by country, currency, code, or rate  
 ✅ **Error Handling** - Comprehensive error states with retry mechanisms  
 ✅ **Loading States** - Skeleton loaders for better user experience  
@@ -40,6 +41,7 @@ src/
 ├── components/
 │   ├── ExchangeRateTable.tsx       # Main table component with sorting
 │   ├── ExchangeRateTableSkeleton.tsx # Loading skeleton
+│   ├── CurrencyConverter.tsx       # Currency conversion calculator
 │   └── ui/                          # shadcn components
 ├── hooks/
 │   └── use-exchange-rates.ts        # Custom hook for API data fetching
@@ -197,6 +199,15 @@ The table component implements client-side sorting:
 - Visual indicators for active sort
 - Type-aware sorting (string vs number)
 
+### Currency Converter
+The converter component provides:
+- Real-time conversion between any two currencies
+- Automatic calculation on input change
+- Support for all CNB currencies plus CZK
+- Swap functionality to reverse conversion direction
+- Clear visual feedback of conversion results
+- Cross-currency conversion via CZK base rate
+
 ## Design Decisions
 
 1. **Professional Financial Theme**: Blue color palette conveys trust and stability
@@ -305,7 +316,7 @@ This project fulfills the Omnixient Technical Assessment requirements:
 ## Future Enhancements
 
 - [ ] Date picker to view historical exchange rates
-- [ ] Currency converter calculator
+- [x] Currency converter calculator ✅ **Implemented**
 - [ ] Favorite currencies feature with persistence
 - [ ] Charts showing rate trends over time
 - [ ] Export to CSV/Excel functionality
