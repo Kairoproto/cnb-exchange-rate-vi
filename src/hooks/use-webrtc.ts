@@ -16,12 +16,14 @@ export interface PeerConnection {
 export interface CallSignal {
   from: string
   to: string
-  type: 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accept' | 'call-reject' | 'call-end'
+  type: 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accept' | 'call-reject' | 'call-end' | 'group-call-start' | 'group-call-join' | 'group-call-leave'
   data?: any
   callType?: CallType
   userName?: string
   userAvatar?: string
   timestamp: number
+  roomId?: string
+  participants?: string[]
 }
 
 const ICE_SERVERS = {
@@ -39,6 +41,8 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
   const [currentCallType, setCurrentCallType] = useState<CallType>('voice')
   const [isAudioEnabled, setIsAudioEnabled] = useState(true)
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
+  const [groupRoomId, setGroupRoomId] = useState<string | null>(null)
+  const [groupParticipants, setGroupParticipants] = useState<string[]>([])
   
   const [signals, setSignals] = useKV<CallSignal[]>(`webrtc-signals-${watchlistId}`, [])
   const processedSignalsRef = useRef<Set<number>>(new Set())
@@ -239,6 +243,21 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
         })
       }
     } else {
+      if (groupRoomId) {
+        groupParticipants.forEach(participantId => {
+          if (participantId !== currentUser.login) {
+            sendSignal({
+              from: currentUser.login,
+              to: participantId,
+              type: 'group-call-leave',
+              roomId: groupRoomId,
+            })
+          }
+        })
+        setGroupRoomId(null)
+        setGroupParticipants([])
+      }
+      
       peersRef.current.forEach((peer, peerId) => {
         peer.peerConnection?.close()
         peer.stream?.getTracks().forEach(track => track.stop())
@@ -256,7 +275,118 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
     stopLocalMedia()
     setCallStatus('ended')
     setTimeout(() => setCallStatus('idle'), 1000)
-  }, [currentUser.login, stopLocalMedia, sendSignal])
+  }, [currentUser.login, stopLocalMedia, sendSignal, groupRoomId, groupParticipants])
+
+  const startGroupCall = useCallback(async (participantIds: string[], participantData: Array<{userId: string, userName: string, userAvatar: string}>, callType: CallType) => {
+    try {
+      const roomId = `room-${Date.now()}-${Math.random().toString(36).substring(7)}`
+      setGroupRoomId(roomId)
+      setGroupParticipants([currentUser.login, ...participantIds])
+      setCallStatus('calling')
+      
+      const stream = await startLocalMedia(callType)
+      
+      for (const participantId of participantIds) {
+        const participantInfo = participantData.find(p => p.userId === participantId)
+        if (!participantInfo) continue
+        
+        const peerConnection = createPeerConnection(participantId, participantInfo.userName, participantInfo.userAvatar, callType)
+        
+        stream.getTracks().forEach(track => {
+          peerConnection.peerConnection?.addTrack(track, stream)
+        })
+
+        const offer = await peerConnection.peerConnection?.createOffer()
+        await peerConnection.peerConnection?.setLocalDescription(offer!)
+        
+        setPeers((current) => new Map(current).set(participantId, peerConnection))
+        
+        await sendSignal({
+          from: currentUser.login,
+          to: participantId,
+          type: 'group-call-start',
+          data: offer,
+          callType,
+          userName: currentUser.login,
+          userAvatar: currentUser.avatarUrl,
+          roomId,
+          participants: [currentUser.login, ...participantIds],
+        })
+      }
+      
+      setCallStatus('connected')
+    } catch (error) {
+      console.error('Error starting group call:', error)
+      setCallStatus('idle')
+      stopLocalMedia()
+    }
+  }, [currentUser, createPeerConnection, startLocalMedia, stopLocalMedia, sendSignal])
+
+  const joinGroupCall = useCallback(async (signal: CallSignal) => {
+    try {
+      setCallStatus('connected')
+      setIncomingCall(null)
+      setGroupRoomId(signal.roomId || null)
+      setGroupParticipants(signal.participants || [])
+      
+      const stream = await startLocalMedia(signal.callType || 'voice')
+      
+      const peerConnection = createPeerConnection(
+        signal.from,
+        signal.userName || signal.from,
+        signal.userAvatar || '',
+        signal.callType || 'voice'
+      )
+      
+      if (peerConnection.peerConnection) {
+        stream.getTracks().forEach(track => {
+          peerConnection.peerConnection!.addTrack(track, stream)
+        })
+
+        await peerConnection.peerConnection.setRemoteDescription(new RTCSessionDescription(signal.data))
+      }
+      
+      const answer = await peerConnection.peerConnection?.createAnswer()
+      await peerConnection.peerConnection?.setLocalDescription(answer!)
+      
+      setPeers((current) => new Map(current).set(signal.from, peerConnection))
+      
+      await sendSignal({
+        from: currentUser.login,
+        to: signal.from,
+        type: 'group-call-join',
+        data: answer,
+        roomId: signal.roomId,
+      })
+      
+      const otherParticipants = (signal.participants || []).filter(p => p !== signal.from && p !== currentUser.login)
+      for (const participantId of otherParticipants) {
+        const newPeerConnection = createPeerConnection(participantId, participantId, '', signal.callType || 'voice')
+        
+        stream.getTracks().forEach(track => {
+          newPeerConnection.peerConnection?.addTrack(track, stream)
+        })
+
+        const offer = await newPeerConnection.peerConnection?.createOffer()
+        await newPeerConnection.peerConnection?.setLocalDescription(offer!)
+        
+        setPeers((current) => new Map(current).set(participantId, newPeerConnection))
+        
+        await sendSignal({
+          from: currentUser.login,
+          to: participantId,
+          type: 'call-request',
+          data: offer,
+          callType: signal.callType,
+          userName: currentUser.login,
+          userAvatar: currentUser.avatarUrl,
+        })
+      }
+    } catch (error) {
+      console.error('Error joining group call:', error)
+      rejectCall()
+    }
+  }, [currentUser, createPeerConnection, startLocalMedia, sendSignal, rejectCall])
 
   useEffect(() => {
     if (!watchlistId || !signals) return
@@ -278,6 +408,24 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
                 setIncomingCall(signal)
                 setCallStatus('ringing')
               }
+              break
+
+            case 'group-call-start':
+              if (callStatus === 'idle' || callStatus === 'ringing') {
+                setIncomingCall(signal)
+                setCallStatus('ringing')
+              }
+              break
+
+            case 'group-call-join':
+              const joinPeer = peersRef.current.get(signal.from)
+              if (joinPeer?.peerConnection) {
+                await joinPeer.peerConnection.setRemoteDescription(new RTCSessionDescription(signal.data))
+              }
+              break
+
+            case 'group-call-leave':
+              endCall(signal.from)
               break
 
             case 'call-accept':
@@ -310,7 +458,7 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
     }
 
     processSignals()
-  }, [signals, watchlistId, currentUser.login, callStatus, endCall])
+  }, [signals, watchlistId, currentUser.login, callStatus, endCall, joinGroupCall])
 
   useEffect(() => {
     const cleanup = setInterval(() => {
@@ -341,11 +489,15 @@ export function useWebRTC(watchlistId: string | null, currentUser: { login: stri
     currentCallType,
     isAudioEnabled,
     isVideoEnabled,
+    groupRoomId,
+    groupParticipants,
     startCall,
     acceptCall,
     rejectCall,
     endCall,
     toggleAudio,
     toggleVideo,
+    startGroupCall,
+    joinGroupCall,
   }
 }

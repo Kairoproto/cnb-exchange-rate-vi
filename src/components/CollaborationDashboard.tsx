@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Users, Globe, Bell, UserPlus, Phone } from '@phosphor-icons/react'
+import { Users, Globe, Bell, UserPlus, Phone, VideoCamera } from '@phosphor-icons/react'
 import { CreateWatchlistDialog } from './CreateWatchlistDialog'
 import { SharedWatchlistManager } from './SharedWatchlistManager'
 import { WatchlistInvites } from './WatchlistInvites'
@@ -9,6 +9,7 @@ import { PublicWatchlistsBrowser } from './PublicWatchlistsBrowser'
 import { WatchlistActivityPanel } from './WatchlistActivityPanel'
 import { CursorTrackingInfo } from './CursorTrackingInfo'
 import { VoiceVideoCall } from './VoiceVideoCall'
+import { GroupVideoCall } from './GroupVideoCall'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useSharedWatchlists, type SharedWatchlist } from '@/hooks/use-shared-watchlists'
 import { useCursorTracking } from '@/hooks/use-cursor-tracking'
@@ -95,7 +96,7 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={selectedWatchlist ? 'lg:col-span-2' : 'lg:col-span-3'}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-3xl grid-cols-3">
+            <TabsList className="grid w-full max-w-4xl grid-cols-4">
               <TabsTrigger value="my-watchlists" className="gap-2">
                 <Users size={20} weight="duotone" />
                 My Watchlists
@@ -106,7 +107,11 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
               </TabsTrigger>
               <TabsTrigger value="calls" className="gap-2">
                 <Phone size={20} weight="duotone" />
-                Voice & Video
+                1-on-1 Calls
+              </TabsTrigger>
+              <TabsTrigger value="group-calls" className="gap-2">
+                <VideoCamera size={20} weight="duotone" />
+                Group Calls
               </TabsTrigger>
             </TabsList>
 
@@ -136,6 +141,29 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
                   <Phone size={20} weight="duotone" />
                   <AlertDescription>
                     Select a shared watchlist from the "My Watchlists" tab to enable voice and video calls with team members.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </TabsContent>
+
+            <TabsContent value="group-calls" className="mt-6">
+              {currentUser && selectedWatchlist && (
+                <GroupVideoCall
+                  watchlistId={selectedWatchlist.id}
+                  watchlistMembers={selectedWatchlist.members.map(m => ({
+                    userId: m.id,
+                    userName: m.login,
+                    userAvatar: m.avatar,
+                    role: m.role,
+                  }))}
+                  currentUser={currentUser}
+                />
+              )}
+              {!selectedWatchlist && (
+                <Alert>
+                  <VideoCamera size={20} weight="duotone" />
+                  <AlertDescription>
+                    Select a shared watchlist from the "My Watchlists" tab to enable group video calls with team members.
                   </AlertDescription>
                 </Alert>
               )}
