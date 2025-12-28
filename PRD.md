@@ -54,6 +54,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Progression**: User selects currency → Chooses time range → Selects chart type → Batch fetching begins with parallel requests → Progress tracked → Chart rendered with trend analysis → Detailed statistics displayed (overall trend, max increase/decrease, volatility, average change) → User explores interactive tooltips showing day-to-day changes → Can switch chart types or refresh data
 - **Success criteria**: Smooth, responsive charts with accurate historical rates in all four formats; parallel batch processing completes efficiently; clear trend indicators with percentage changes; informative tooltips with formatted dates and change calculations; comprehensive trend statistics; graceful handling of partial data; automatic proxy fallback for reliability
 
+### Data Export Functionality
+- **Functionality**: Allows users to download current exchange rate data in CSV, JSON, or PDF formats
+- **Purpose**: Enables users to save, share, and analyze data offline or in external tools
+- **Trigger**: User clicks Export Data button and selects desired format
+- **Progression**: User clicks export dropdown → Selects format (CSV/JSON/PDF) → File is generated with formatted data → Browser downloads file → Success toast notification shown
+- **Success criteria**: Files download correctly with all exchange rate data; CSV is spreadsheet-compatible; JSON is properly structured with metadata; PDF is readable and printable; filenames include date for organization; toast notifications confirm successful exports
+
 ## Edge Case Handling
 
 - **API Timeout/Network Failure**: Display friendly error message with retry button, automatic proxy fallback, and troubleshooting hints
@@ -70,6 +77,9 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Long-term Data Loading**: Progressive batch loading with clear progress indication for chart data
 - **Chart Type Switching**: Instant transitions between line, bar, area, and change chart types without refetching
 - **Multiple Proxy Failures**: Exhaust all proxy options with retries before showing error to user
+- **Export Failure**: Catch and display friendly error messages if file generation fails
+- **Large Data Sets**: Ensure export works efficiently even with full currency dataset
+- **Special Characters in Data**: Properly escape currency names and countries in CSV/JSON/PDF output
 
 ## Design Direction
 
@@ -123,17 +133,20 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Recharts LineChart, BarChart, and AreaChart for historical trend visualization
   - Tooltip component for chart data point details
   - Legend component for chart data series identification
+  - DropdownMenu component for export format selection
 - **Customizations**: 
   - Custom table styling with alternating row backgrounds for easier scanning
   - Monospace font override for numeric columns
   - Custom loading spinner with CNB-style branding colors
   - Chart styled with theme colors for consistency
   - Custom trend indicators with color-coded positive/negative changes
+  - Export menu with format icons and descriptions for clarity
 - **States**: 
   - Buttons: default with solid primary, hover with slight brightness increase, active with scale press, disabled with reduced opacity
   - Table rows: hover with subtle background tint, selected with accent border
   - Loading: skeleton placeholders that match final content layout
   - Chart: interactive hover states on data points, smooth transitions on data updates
+  - Dropdown items: hover with background highlight, active indication on click
 - **Icon Selection**: 
   - ArrowsClockwise for refresh action
   - Warning for error states  
@@ -145,6 +158,10 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - ChartLine for line chart selector
   - ChartBar for bar chart selector
   - ChartLineUp for area chart selector
+  - DownloadSimple for export functionality
+  - FileCsv for CSV format option
+  - FileJs for JSON format option
+  - FileText for PDF format option
 - **Spacing**: 
   - Container padding: p-6 (24px)
   - Card spacing: gap-6 between major sections
@@ -162,3 +179,5 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Ensure dropdowns are touch-friendly with large hit areas
   - Chart remains responsive with adjusted margins for smaller screens
   - Stack chart controls (currency selector, time range, chart type) into 2x2 grid on mobile
+  - Export button wraps to new line on mobile for better accessibility
+  - Export dropdown menu aligned properly on small screens

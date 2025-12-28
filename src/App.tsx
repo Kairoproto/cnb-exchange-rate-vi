@@ -4,6 +4,7 @@ import { ExchangeRateTable } from '@/components/ExchangeRateTable'
 import { ExchangeRateTableSkeleton } from '@/components/ExchangeRateTableSkeleton'
 import { CurrencyConverter } from '@/components/CurrencyConverter'
 import { CurrencyTrendChart } from '@/components/CurrencyTrendChart'
+import { ExportMenu } from '@/components/ExportMenu'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,34 +30,41 @@ function App() {
       <Toaster position="top-right" />
       
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary rounded-xl">
-              <Bank size={32} weight="fill" className="text-primary-foreground" />
+        <div className="mb-8 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-primary rounded-xl">
+                <Bank size={32} weight="fill" className="text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  CNB Exchange Rates
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Czech National Bank Official Rates
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                CNB Exchange Rates
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Czech National Bank Official Rates
-              </p>
+            
+            <div className="flex flex-wrap gap-2">
+              {!isLoading && !error && data && (
+                <ExportMenu data={data} variant="outline" size="lg" />
+              )}
+              <Button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                size="lg"
+                className="gap-2"
+              >
+                <ArrowsClockwise 
+                  size={18} 
+                  weight="bold"
+                  className={isLoading ? 'animate-spin' : ''}
+                />
+                Refresh
+              </Button>
             </div>
           </div>
-          
-          <Button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            size="lg"
-            className="gap-2"
-          >
-            <ArrowsClockwise 
-              size={18} 
-              weight="bold"
-              className={isLoading ? 'animate-spin' : ''}
-            />
-            Refresh
-          </Button>
         </div>
 
 {!isLoading && !error && data && (
@@ -82,11 +90,16 @@ function App() {
                   </CardDescription>
                 )}
               </div>
-              {data && (
-                <div className="text-sm text-muted-foreground">
-                  {data.rates.length} currencies
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {data && (
+                  <div className="text-sm text-muted-foreground">
+                    {data.rates.length} currencies
+                  </div>
+                )}
+                {data && (
+                  <ExportMenu data={data} variant="ghost" size="sm" />
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
