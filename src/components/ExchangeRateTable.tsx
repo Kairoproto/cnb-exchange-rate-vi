@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ExchangeRate } from '@/lib/types'
 import { formatExchangeRate } from '@/lib/utils'
-import { CaretUp, CaretDown, Star, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { CaretUp, CaretDown, Star, MagnifyingGlass, X, FloppyDisk } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,9 +15,36 @@ import {
 } from '@/components/ui/table'
 import { useFavorites } from '@/hooks/use-favorites'
 import { AddToSharedWatchlist } from '@/components/AddToSharedWatchlist'
+import { QuickFilterPresetSelector } from '@/components/QuickFilterPresetSelector'
+import { useFilterPresets } from '@/hooks/use-filter-presets'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { toast } from 'sonner'
 
 type SortField = 'country' | 'currency' | 'currencyCode' | 'rate'
 type SortDirection = 'asc' | 'desc'
+
+interface TableFilters {
+  searchQuery: string
+  sortField: SortField
+  sortDirection: SortDirection
+}
 
 interface ExchangeRateTableProps {
   rates: ExchangeRate[]
@@ -29,6 +56,39 @@ export function ExchangeRateTable({ rates, showFavoritesOnly = false }: Exchange
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [searchQuery, setSearchQuery] = useState('')
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { createPreset } = useFilterPresets()
+  
+  const [isSavePresetDialogOpen, setIsSavePresetDialogOpen] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [presetDescription, setPresetDescription] = useState('')
+  const [presetCategory, setPresetCategory] = useState<'search' | 'rate' | 'comparison' | 'custom'>('rate')
+
+  const currentFilters: TableFilters = {
+    searchQuery,
+    sortField,
+    sortDirection,
+  }
+
+  const applyPresetFilters = (filters: TableFilters) => {
+    setSearchQuery(filters.searchQuery || '')
+    setSortField(filters.sortField || 'country')
+    setSortDirection(filters.sortDirection || 'asc')
+  }
+
+  const handleSavePreset = () => {
+    if (!presetName.trim()) {
+      toast.error('Please enter a preset name')
+      return
+    }
+
+    createPreset(presetName, currentFilters, presetDescription, presetCategory)
+    toast.success(`Preset "${presetName}" saved successfully`)
+    
+    setPresetName('')
+    setPresetDescription('')
+    setPresetCategory('rate')
+    setIsSavePresetDialogOpen(false)
+  }
 
   const filteredRates = useMemo(() => {
     let filtered = showFavoritesOnly 
@@ -83,28 +143,100 @@ export function ExchangeRateTable({ rates, showFavoritesOnly = false }: Exchange
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <MagnifyingGlass 
-          size={20} 
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <MagnifyingGlass 
+            size={20} 
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+          />
+          <Input
+            type="text"
+            placeholder="Search by country, currency, or code..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10 h-11"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={16} />
+            </Button>
+          )}
+        </div>
+
+        <QuickFilterPresetSelector
+          currentFilters={currentFilters}
+          onApplyPreset={applyPresetFilters}
+          filterType="rate"
         />
-        <Input
-          type="text"
-          placeholder="Search by country, currency, or code..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 pr-10 h-11"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-            onClick={() => setSearchQuery('')}
-          >
-            <X size={16} />
-          </Button>
-        )}
+
+        <Dialog open={isSavePresetDialogOpen} onOpenChange={setIsSavePresetDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 shrink-0">
+              <FloppyDisk size={16} weight="duotone" />
+              Save
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Filter Preset</DialogTitle>
+              <DialogDescription>
+                Save your current filter settings for quick access later
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="table-preset-name">Preset Name *</Label>
+                <Input
+                  id="table-preset-name"
+                  placeholder="e.g., European Currencies"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="table-preset-description">Description (Optional)</Label>
+                <Textarea
+                  id="table-preset-description"
+                  placeholder="Describe what this preset filters for..."
+                  value={presetDescription}
+                  onChange={(e) => setPresetDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="table-preset-category">Category</Label>
+                <Select
+                  value={presetCategory}
+                  onValueChange={(value) => setPresetCategory(value as any)}
+                >
+                  <SelectTrigger id="table-preset-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="search">🔍 Search</SelectItem>
+                    <SelectItem value="rate">💱 Rate</SelectItem>
+                    <SelectItem value="comparison">📊 Comparison</SelectItem>
+                    <SelectItem value="custom">⚙️ Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSavePresetDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSavePreset} className="gap-2">
+                <FloppyDisk size={18} weight="bold" />
+                Save Preset
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {searchQuery && (

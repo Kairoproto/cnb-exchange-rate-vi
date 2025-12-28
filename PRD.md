@@ -766,3 +766,68 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Auto-refresh scheduler controls (toggle, select) full-width on small screens
   - Keyboard shortcuts button visible in mobile header but explains desktop-only feature
   - Keyboard shortcuts help dialog fully scrollable on mobile with touch-friendly dismiss
+
+
+
+### Filter Preset Management System
+- **Functionality**: Allows users to save, name, and reuse filter configurations across all sections of the application
+- **Purpose**: Enables power users to quickly switch between frequently-used filter combinations, improving efficiency and workflow
+- **Trigger**: User configures filters in any section (Exchange Rate Table, Advanced Search, Comparison, etc.) and clicks save preset button
+- **Progression**: User applies filters → Clicks "Save Preset" button → Dialog opens → Enters preset name, description (optional), and category → Saves → Preset stored persistently → Can load preset later from any compatible section → Filters automatically applied
+- **Success criteria**: 
+  - Presets save successfully with all filter parameters
+  - Presets persist across browser sessions using `useKV` hook
+  - Presets can be loaded and applied instantly
+  - Preset manager displays all saved presets with metadata
+  - Users can edit, duplicate, and delete presets
+  - Usage count tracks how often each preset is applied
+  - Categories organize presets by type (Search, Rate, Comparison, Custom)
+  - Quick preset selector provides fast access to frequently-used presets
+  - Presets work across different tabs/sections where applicable
+  - Mobile-friendly with responsive dialogs and touch targets
+
+### Filter Preset Components & Features
+- **FilterPresetManager**: Full-featured preset management interface with:
+  - Create new presets with name, description, and category
+  - Edit existing preset metadata
+  - Delete presets with confirmation
+  - Duplicate presets to create variations
+  - Sort by name, date, or usage frequency
+  - Filter by category (Search, Rate, Comparison, Custom)
+  - Visual usage statistics showing popularity
+  - Scrollable list with search functionality
+  - Empty state guidance for new users
+- **QuickFilterPresetSelector**: Compact dropdown for quick preset access:
+  - Shows top 10 most-used presets
+  - Search functionality within presets
+  - Apply preset with single click
+  - Visual indicators for currently applied preset
+  - Badge showing number of available presets
+  - Link to full preset manager
+- **Integration Points**:
+  - Exchange Rate Table: Save and load search/sort configurations
+  - Advanced Search Filters: Save complex multi-parameter searches
+  - Comparison Mode: Save date range templates
+  - Analytics Tab: Save visualization preferences
+  - Dedicated "Presets" tab for centralized management
+- **Preset Data Structure**:
+  - Unique ID for each preset
+  - Name and optional description
+  - Filters object (flexible schema for different filter types)
+  - Category classification
+  - Creation and last updated timestamps
+  - Usage count for popularity tracking
+  - All data persists using Spark KV storage
+
+### Mobile Considerations for Filter Presets
+- Preset manager card fully responsive with mobile-optimized layout
+- Save preset dialog scrollable on mobile with proper touch targets
+- Preset list items stack vertically on small screens
+- Action buttons (Apply, Edit, Duplicate, Delete) maintain 44px minimum touch targets
+- Category and sort dropdowns full-width on mobile
+- Quick preset selector popover adapts to available screen space
+- Preset name and description inputs keyboard-friendly on mobile
+- Confirmation dialogs properly sized for mobile screens
+- Empty state messaging concise and actionable on small screens
+- Preset badges and metadata remain readable on narrow displays
+- "Presets" tab included in main navigation with proper responsive text sizing

@@ -23,9 +23,11 @@ import {
   ChatCircle,
   Sparkle,
   CaretDown,
+  FloppyDisk,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { QuickFilterPresetSelector } from '@/components/QuickFilterPresetSelector'
 
 export interface AdvancedFilters {
   dateRange: {
@@ -134,6 +136,11 @@ export function AdvancedSearchFilters({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <QuickFilterPresetSelector
+              currentFilters={filters}
+              onApplyPreset={onFiltersChange}
+              filterType="search"
+            />
             {hasActiveFilters && (
               <Button
                 variant="ghost"

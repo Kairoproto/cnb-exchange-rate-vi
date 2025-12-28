@@ -29,16 +29,17 @@ import { NotificationCenter } from '@/components/NotificationCenter'
 import { AutoRefreshScheduler } from '@/components/AutoRefreshScheduler'
 import { KeyboardShortcuts } from '@/components/KeyboardShortcuts'
 import { CollaborationDashboard } from '@/components/CollaborationDashboard'
+import { FilterPresetManager } from '@/components/FilterPresetManager'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck, Star, ChartPieSlice, Bell, Sparkle, ClockCounterClockwise, Keyboard, Users } from '@phosphor-icons/react'
+import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck, Star, ChartPieSlice, Bell, Sparkle, ClockCounterClockwise, Keyboard, Users, FolderOpen } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 
-type ViewMode = 'current' | 'comparison' | 'analytics' | 'ai' | 'history' | 'collaborate'
+type ViewMode = 'current' | 'comparison' | 'analytics' | 'ai' | 'history' | 'collaborate' | 'presets'
 
 function App() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
@@ -140,7 +141,7 @@ function App() {
           </div>
 
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
-            <TabsList className="grid w-full max-w-5xl grid-cols-6 h-12">
+            <TabsList className="grid w-full max-w-6xl grid-cols-7 h-12">
               <TabsTrigger value="current" className="gap-2 text-base">
                 <ChartLine size={20} weight="duotone" />
                 Current Rates
@@ -164,6 +165,10 @@ function App() {
               <TabsTrigger value="collaborate" className="gap-2 text-base">
                 <Users size={20} weight="duotone" />
                 Collaborate
+              </TabsTrigger>
+              <TabsTrigger value="presets" className="gap-2 text-base">
+                <FolderOpen size={20} weight="duotone" />
+                Presets
               </TabsTrigger>
             </TabsList>
 
@@ -430,6 +435,15 @@ function App() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="presets" className="space-y-8 mt-8">
+              <FilterPresetManager
+                currentFilters={{}}
+                onApplyPreset={(filters) => {
+                  toast.info('Navigate to the appropriate tab to apply this preset')
+                }}
+              />
             </TabsContent>
           </Tabs>
         </div>
