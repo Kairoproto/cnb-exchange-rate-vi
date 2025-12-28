@@ -15,6 +15,7 @@ import { RateAlerts } from '@/components/RateAlerts'
 import { AiInsights } from '@/components/AiInsights'
 import { AiChatAssistant } from '@/components/AiChatAssistant'
 import { AiReportGenerator } from '@/components/AiReportGenerator'
+import { AiCurrencyPredictions } from '@/components/AiCurrencyPredictions'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -271,6 +272,8 @@ function App() {
               {!isLoading && !error && data && (
                 <>
                   <AiInsights rates={data.rates} date={data.date} />
+                  
+                  <AiCurrencyPredictions rates={data.rates} date={data.date} />
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiChatAssistant rates={data.rates} date={data.date} />

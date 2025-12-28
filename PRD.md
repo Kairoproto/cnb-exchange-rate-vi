@@ -110,6 +110,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Progression**: User navigates to AI Insights tab → Clicks Generate Insights → AI analyzes top 10 currencies → Generates 5 categorized insights (trend/opportunity/risk/info) → Insights display with color-coded cards → Each insight shows currency code, insight type, and detailed message
 - **Success criteria**: Insights generated within 5-10 seconds using GPT-4o-mini; JSON response parsed correctly; 5 unique insights per generation; color-coded by type (green for opportunities, blue for trends, red for risks, gray for info); clear currency identification; professional, actionable insights; graceful error handling
 
+### AI Currency Predictions (7-Day Forecast)
+- **Functionality**: Generates AI-powered predictions for currency exchange rates over the next 7 days, including confidence levels, trend analysis, and visual forecasting charts
+- **Purpose**: Helps users anticipate currency movements and make informed decisions about currency exchanges, investments, or travel planning based on data-driven forecasts
+- **Trigger**: User selects a currency and clicks "Generate Forecast" button
+- **Progression**: User navigates to AI Insights tab → Selects currency from dropdown → Clicks Generate Forecast → AI analyzes current rate and market context → Generates day-by-day predictions for next 7 days → Displays prediction chart, trend direction (bullish/bearish/stable), confidence levels, and detailed analysis → Shows percentage changes and predicted values for each day → User can select different currencies for comparison
+- **Success criteria**: Predictions generated within 10-15 seconds using GPT-4o model; realistic daily variations (0.1-0.5%); 7-day forecast with individual confidence levels (high/medium/low); interactive line chart showing trend; overall trend classification with percentage change; detailed daily breakdown with specific rates; professional analysis explaining prediction reasoning; color-coded trend indicators; responsive design for mobile viewing
+
 ### AI Currency Chat Assistant
 - **Functionality**: Interactive conversational AI that answers questions about exchange rates, provides recommendations, and offers personalized currency advice in natural language
 - **Purpose**: Makes currency data accessible through natural conversation, allowing users to ask questions in plain English rather than navigating complex interfaces
@@ -168,6 +175,12 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Three-Tab Navigation**: Ensure smooth transitions between Current Rates, Comparison, and Analytics tabs
 - **AI Insights Generation Failure**: Display friendly error with retry option if AI service fails
 - **AI Insights Invalid JSON**: Handle malformed AI responses gracefully without breaking UI
+- **AI Predictions No Currency Selected**: Disable generate button until currency is selected
+- **AI Predictions Generation Failure**: Show clear error message with retry option if prediction fails
+- **AI Predictions Invalid Response Format**: Gracefully handle malformed AI prediction data
+- **AI Predictions Confidence Levels**: Display high/medium/low confidence for each day's prediction
+- **AI Predictions Realistic Variations**: Ensure AI generates realistic daily changes (0.1-0.5%)
+- **AI Predictions Chart Rendering**: Handle edge cases where prediction data is incomplete
 - **AI Chat Context Overflow**: Limit conversation history to last 4 messages to prevent token limits
 - **AI Chat Network Failure**: Show error message in chat bubble if AI request fails
 - **AI Chat Empty Input**: Disable send button when input is empty or whitespace
@@ -278,6 +291,15 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Bell for rate alerts feature
   - CheckCircle for triggered alerts
   - Sparkle for AI features and insights
+  - Brain for AI predictions feature
+  - ChatCircleDots for AI chat assistant
+  - FileText for AI report generator
+  - PaperPlaneRight for sending chat messages
+  - User for user chat messages
+  - ArrowsClockwise for stable/neutral trend in predictions
+  - Bell for rate alerts feature
+  - CheckCircle for triggered alerts
+  - Sparkle for AI features and insights
   - ChatCircleDots for AI chat assistant
   - FileText for AI report generator
   - PaperPlaneRight for sending chat messages
@@ -311,6 +333,15 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Multi-currency converter grid becomes single column on small screens
   - Analytics tab components stack vertically on mobile for optimal viewing
   - Search input full width on mobile with proper spacing
+  - Alert creation form fields stack vertically on small screens
+  - AI Insights tab includes 4th tab in responsive navigation
+  - AI predictions currency selector and generate button stack vertically on mobile
+  - AI predictions chart maintains readability on small screens with adjusted margins
+  - AI predictions daily breakdown cards stack properly with readable text
+  - AI predictions stats grid (3 cards) stacks to single column on mobile
+  - AI chat messages stack properly with max-width constraints
+  - AI report viewer scrollable on mobile with touch-friendly controls
+  - AI features maintain usability on small screens with proper spacing
   - Alert creation form fields stack vertically on small screens
   - AI Insights tab includes 4th tab in responsive navigation
   - AI chat messages stack properly with max-width constraints
