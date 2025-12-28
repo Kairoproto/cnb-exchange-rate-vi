@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Users, Globe, Bell, UserPlus } from '@phosphor-icons/react'
+import { Users, Globe, Bell, UserPlus, Phone } from '@phosphor-icons/react'
 import { CreateWatchlistDialog } from './CreateWatchlistDialog'
 import { SharedWatchlistManager } from './SharedWatchlistManager'
 import { WatchlistInvites } from './WatchlistInvites'
 import { PublicWatchlistsBrowser } from './PublicWatchlistsBrowser'
 import { WatchlistActivityPanel } from './WatchlistActivityPanel'
 import { CursorTrackingInfo } from './CursorTrackingInfo'
+import { VoiceVideoCall } from './VoiceVideoCall'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useSharedWatchlists, type SharedWatchlist } from '@/hooks/use-shared-watchlists'
 import { useCursorTracking } from '@/hooks/use-cursor-tracking'
@@ -22,6 +23,7 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
   const [activeTab, setActiveTab] = useState('my-watchlists')
   const [selectedWatchlist, setSelectedWatchlist] = useState<SharedWatchlist | null>(null)
   const [currentUserId, setCurrentUserId] = useState('')
+  const [currentUser, setCurrentUser] = useState<{ login: string; avatarUrl: string } | null>(null)
   const { watchlists } = useSharedWatchlists()
   const { cursors } = useCursorTracking(
     selectedWatchlist?.id || null,
@@ -33,6 +35,10 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
       const user = await window.spark.user()
       if (user) {
         setCurrentUserId(String(user.id))
+        setCurrentUser({
+          login: user.login,
+          avatarUrl: user.avatarUrl,
+        })
       }
     }
     loadUser()
@@ -89,7 +95,7 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={selectedWatchlist ? 'lg:col-span-2' : 'lg:col-span-3'}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-2xl grid-cols-2">
+            <TabsList className="grid w-full max-w-3xl grid-cols-3">
               <TabsTrigger value="my-watchlists" className="gap-2">
                 <Users size={20} weight="duotone" />
                 My Watchlists
@@ -97,6 +103,10 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
               <TabsTrigger value="public" className="gap-2">
                 <Globe size={20} weight="duotone" />
                 Browse Public
+              </TabsTrigger>
+              <TabsTrigger value="calls" className="gap-2">
+                <Phone size={20} weight="duotone" />
+                Voice & Video
               </TabsTrigger>
             </TabsList>
 
@@ -106,6 +116,29 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
 
             <TabsContent value="public" className="mt-6">
               <PublicWatchlistsBrowser />
+            </TabsContent>
+
+            <TabsContent value="calls" className="mt-6">
+              {currentUser && selectedWatchlist && (
+                <VoiceVideoCall
+                  watchlistId={selectedWatchlist.id}
+                  watchlistMembers={selectedWatchlist.members.map(m => ({
+                    userId: m.id,
+                    userName: m.login,
+                    userAvatar: m.avatar,
+                    role: m.role,
+                  }))}
+                  currentUser={currentUser}
+                />
+              )}
+              {!selectedWatchlist && (
+                <Alert>
+                  <Phone size={20} weight="duotone" />
+                  <AlertDescription>
+                    Select a shared watchlist from the "My Watchlists" tab to enable voice and video calls with team members.
+                  </AlertDescription>
+                </Alert>
+              )}
             </TabsContent>
           </Tabs>
         </div>

@@ -8,7 +8,7 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 3. **Interactive** - Practical currency conversion tools that make exchange rate data immediately useful
 
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-- This application has evolved into a sophisticated financial data platform with multiple specialized views (Current Rates, Comparison Mode, Analytics, AI Insights, History, Collaborate), real-time data processing, persistent user preferences (favorites, alerts, shared watchlists), advanced filtering and search, interactive visualizations, multi-format exports, intelligent alert systems, cutting-edge AI-powered analysis features, comprehensive notification management, auto-refresh scheduling, keyboard shortcuts for power users, visual currency performance heatmaps, and multi-user collaboration with role-based permissions. It demonstrates complex state management, batch API processing, natural language processing integration, collaborative data sharing, user permission management, invitation systems, and provides professional-grade analysis tools with artificial intelligence capabilities and team collaboration features.
+- This application has evolved into a sophisticated financial data platform with multiple specialized views (Current Rates, Comparison Mode, Analytics, AI Insights, History, Collaborate), real-time data processing, persistent user preferences (favorites, alerts, shared watchlists), advanced filtering and search, interactive visualizations, multi-format exports, intelligent alert systems, cutting-edge AI-powered analysis features, comprehensive notification management, auto-refresh scheduling, keyboard shortcuts for power users, visual currency performance heatmaps, and multi-user collaboration with role-based permissions, live cursor tracking, and real-time voice/video communication. It demonstrates complex state management, batch API processing, natural language processing integration, collaborative data sharing, user permission management, invitation systems, WebRTC peer-to-peer communication, and provides professional-grade analysis tools with artificial intelligence capabilities and comprehensive team collaboration features including voice and video calls.
 
 ## Essential Features
 
@@ -187,6 +187,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Progression**: User selects shared watchlist → Cursor tracking hook initializes → Mouse movements captured and throttled (50ms) → Position calculated as percentage of viewport → Position data stored in KV with user info → Other users' cursor positions fetched from KV → LiveCursorsOverlay component renders all cursors → Each cursor displays as colored SVG pointer with user avatar badge → Cursors animate smoothly to new positions using framer-motion spring physics → Active Cursors Indicator appears in top-right corner → Shows count of active users with avatars → Cleanup interval runs every 2 seconds → Removes cursors inactive for 5+ seconds → User's own cursor not displayed to themselves → Activity Monitor shows cursor count and status → User navigates away → Cursor removed from KV storage → Tracking stops
 - **Success criteria**: Cursor positions update in real-time with <100ms latency; smooth cursor animations without jank; each user assigned consistent color from 8-color palette; cursor icons visible with drop shadows; user avatars display correctly in cursor badges; usernames shown next to cursors; throttling prevents excessive updates (50ms intervals); inactive cursors cleanup after 5 seconds automatically; cleanup runs every 2 seconds without UI impact; user's own cursor not shown to themselves; Active Cursors Indicator fixed to top-right with proper z-index; indicator shows accurate count of active users; user avatars displayed in indicator (max 5, then "+N"); pulsing green status indicator for live activity; cursor overlay z-index 9999 above all content; pointer-events: none prevents cursor interference; cursor data stored per watchlist ID in KV; cursor positions as viewport percentages work across all screen sizes; color assignment based on user ID hash for consistency; initials fallback when avatar unavailable; cursor tracking info card explains feature clearly; Activity Monitor shows live cursor status with icon; no tracking when watchlist not selected; graceful cleanup on component unmount; no memory leaks from intervals; works with unlimited simultaneous users; performance tested with 10+ cursors; mobile-friendly (cursors visible, touch events excluded); cursor SVG uses currentColor for easy theming; framer-motion spring physics (stiffness: 500, damping: 30); fade in/out animations on cursor appear/disappear; works seamlessly with activity indicators; cursor data structure includes userId, userName, userAvatar, x, y, timestamp, watchlistId
 
+### Voice & Video Calls
+- **Functionality**: Real-time peer-to-peer voice and video communication between team members within shared watchlists, using WebRTC technology with support for audio/video toggling, call management, and call status indicators
+- **Purpose**: Enables teams to discuss currency analysis, coordinate trading decisions, and collaborate in real-time while viewing shared watchlists, eliminating the need for external communication tools
+- **Trigger**: User navigates to Voice & Video tab in Collaborate dashboard, selects a team member from shared watchlist, and initiates voice or video call
+- **Progression**: User selects shared watchlist → Navigates to Voice & Video tab → Views list of team members → Clicks Voice or Video button next to member → Browser requests microphone/camera permissions → Local media stream initialized → WebRTC offer created and sent via KV signaling → Call status changes to "calling" → Recipient sees incoming call notification with accept/decline options → Recipient accepts call → WebRTC answer exchanged → ICE candidates negotiated → Peer connection established → Call status changes to "connected" → Video streams displayed in grid layout → Audio streams play automatically → Users can toggle audio mute/unmute → Users can toggle video on/off (video calls only) → Either user can end call → WebRTC connections closed → Media streams stopped → Call status returns to idle
+- **Success criteria**: WebRTC peer-to-peer connections established successfully; audio quality is clear without echo or distortion; video quality supports up to 720p resolution; call signaling works reliably through KV storage; incoming call notifications appear instantly with toast messages; accept/decline buttons respond immediately; local and remote video streams display in responsive grid layout; mute/unmute toggles work instantly with visual feedback; video on/off toggles work for video calls; call status indicator shows accurate state (idle/calling/ringing/connected/ended); end call button immediately closes connections; media streams properly cleaned up on call end; browser permission prompts appear when starting calls; graceful error handling for permission denials; supports multiple simultaneous peer connections (group calls); ICE candidate exchange completes successfully; STUN servers configured for NAT traversal; call signals expire after 60 seconds; old signals cleaned up every 30 seconds; works across different browsers; no audio feedback loops; video elements auto-play correctly; responsive layout adapts to screen size; member list shows only other team members (excludes self); empty state shown when no members available; info alert explains how calls work; call type (voice/video) properly communicated; avatar fallbacks for users without profile pictures; proper z-index layering for video elements; call persistence across tab switches; watchlist selection required for calls; mobile-friendly touch targets; professional UI with icons and badges
+
 ## Edge Case Handling
 
 - **API Timeout/Network Failure**: Display friendly error message with retry button, automatic proxy fallback, and troubleshooting hints
@@ -342,6 +349,30 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Active Viewers Panel Sync**: Activity panel automatically updates when watchlist membership changes
 - **Active Viewers Mobile Layout**: Compact avatar display and stacked layout on small screens
 - **Active Viewers Tooltip Performance**: Lazy load tooltips to prevent performance issues with many members
+- **Voice/Video Call Permission Denied**: Show clear error message when browser denies microphone/camera access
+- **Voice/Video Call Network Issues**: Display connection status and retry options when WebRTC connection fails
+- **Voice/Video Call ICE Failure**: Gracefully handle NAT traversal failures with STUN server fallback
+- **Voice/Video Call Signaling Timeout**: Expire call signals after 60 seconds to prevent stale call requests
+- **Voice/Video Call Signal Cleanup**: Clean up old signals every 30 seconds to prevent KV storage bloat
+- **Voice/Video Call No Members**: Show helpful empty state when watchlist has no other members
+- **Voice/Video Call Duplicate Request**: Prevent multiple simultaneous call attempts to same user
+- **Voice/Video Call Already In Call**: Block new calls when user is already in an active call
+- **Voice/Video Call Browser Compatibility**: Handle WebRTC API differences across browsers
+- **Voice/Video Call Media Track Errors**: Gracefully handle media track failures during call
+- **Voice/Video Call Connection State**: Monitor and display connection state changes (connecting/connected/disconnected)
+- **Voice/Video Call End While Ringing**: Handle call end during ringing state without errors
+- **Voice/Video Call Reject While Connecting**: Allow call rejection even during connection setup
+- **Voice/Video Call Audio Echo**: Ensure local audio is muted in video element to prevent echo
+- **Voice/Video Call Video Autoplay**: Handle browser autoplay policies for remote video streams
+- **Voice/Video Call Multiple Peers**: Support multiple simultaneous peer connections for group calls
+- **Voice/Video Call Peer Disconnection**: Clean up peer connection when remote user disconnects
+- **Voice/Video Call Toggle During Setup**: Prevent audio/video toggles before connection is established
+- **Voice/Video Call Watchlist Deselection**: End all active calls when user deselects watchlist
+- **Voice/Video Call Tab Switch**: Maintain call state when switching between collaboration tabs
+- **Voice/Video Call Component Unmount**: Properly cleanup all media streams and connections on unmount
+- **Voice/Video Call Mobile Support**: Handle touch-friendly controls and reduced bandwidth on mobile
+- **Voice/Video Call Bandwidth Constraints**: Adjust video quality based on available bandwidth
+- **Voice/Video Call Audio Only Mode**: Handle voice calls without video track properly
 
 ## Design Direction
 
@@ -404,6 +435,8 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Switch component for toggle controls in preferences and settings
   - Progress component for visual indicators in heatmap list view
   - Tooltip component for detailed information on hover in heatmap
+  - Avatar component for user profile pictures in collaboration features
+  - Video element for displaying video call streams with autoPlay and playsInline attributes
 - **Customizations**: 
   - Custom table styling with alternating row backgrounds for easier scanning
   - Monospace font override for numeric columns
@@ -411,6 +444,10 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Chart styled with theme colors for consistency
   - Custom trend indicators with color-coded positive/negative changes
   - Export menu with format icons and descriptions for clarity
+  - Video call grid layout with responsive aspect ratio containers
+  - Call status badges with animated indicators for active calls
+  - Media control buttons with clear on/off states for audio/video
+  - User avatars with fallback initials for team members
 - **States**: 
   - Buttons: default with solid primary, hover with slight brightness increase, active with scale press, disabled with reduced opacity
   - Table rows: hover with subtle background tint, selected with accent border
@@ -481,6 +518,13 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - StopCircle for inactive auto-refresh state
   - Keyboard for keyboard shortcuts feature
   - Command for shortcuts help dialog
+  - Phone for voice calls and call tab
+  - PhoneDisconnect for ending calls
+  - VideoCamera for video calls
+  - Microphone for audio enabled state
+  - MicrophoneSlash for audio muted state
+  - VideoCameraSlash for video disabled state
+  - UserCircle for no video placeholder
 - **Spacing**: 
   - Container padding: p-6 (24px)
   - Card spacing: gap-6 between major sections
@@ -551,6 +595,19 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Collaboration dashboard info alert wraps text appropriately on narrow screens
   - Browse public watchlists grid stacks to single column on mobile
   - All collaboration action buttons maintain 44px minimum touch target on mobile
+  - Voice/Video call tab properly integrated into 3-tab navigation in collaboration section
+  - Voice/video call team member list stacks to single column on mobile
+  - Call action buttons (voice/video) remain accessible with proper touch targets (min 44px)
+  - Video call grid adapts from 2-column to single column on mobile screens
+  - Video call aspect ratio maintained on all screen sizes (16:9 or 4:3)
+  - Call control buttons stack horizontally with adequate spacing on mobile
+  - Incoming call notification card fully readable and actionable on small screens
+  - Call status badge remains visible without blocking content on mobile
+  - Video elements scale proportionally on mobile while maintaining visibility
+  - Mute/unmute and video toggle buttons full-width on very small screens
+  - End call button prominent and easily accessible on mobile
+  - Team member avatars and names clearly visible in call interface on mobile
+  - Call feature info alert scrollable and readable on mobile devices
   - Currency heatmap sort controls and view toggle stack appropriately on small screens
   - Notification center cards stack properly with full-width layout on mobile
   - Notification center action buttons remain accessible with proper touch targets
