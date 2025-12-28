@@ -19,15 +19,19 @@ import {
   Info,
   SpeakerHigh,
   SpeakerSlash,
+  Sparkle,
 } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/utils'
 import type { RecordingMetadata } from '@/hooks/use-call-recording'
+import { toast } from 'sonner'
 
 interface CallRecordingsViewerProps {
   recordings: RecordingMetadata[]
   onDelete: (recordingId: string) => void
   onDownload: (recordingId: string, fileName: string) => void
   getRecordingBlob: (recordingId: string) => Blob | null
+  onGenerateTranscription?: (recording: RecordingMetadata, blob: Blob) => void
+  hasTranscription?: (recordingId: string) => boolean
 }
 
 function formatDuration(seconds: number): string {
@@ -259,12 +263,15 @@ export function CallRecordingsViewer({
   onDelete,
   onDownload,
   getRecordingBlob,
+  onGenerateTranscription,
+  hasTranscription,
 }: CallRecordingsViewerProps) {
   const [selectedRecording, setSelectedRecording] = useState<{
     metadata: RecordingMetadata
     blob: Blob
   } | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [generatingTranscriptionId, setGeneratingTranscriptionId] = useState<string | null>(null)
 
   const handlePlayRecording = (recording: RecordingMetadata) => {
     const blob = getRecordingBlob(recording.id)
@@ -282,6 +289,26 @@ export function CallRecordingsViewer({
   const handleDelete = (recordingId: string) => {
     onDelete(recordingId)
     setDeleteConfirmId(null)
+  }
+
+  const handleGenerateTranscription = async (recording: RecordingMetadata) => {
+    if (!onGenerateTranscription) return
+    
+    const blob = getRecordingBlob(recording.id)
+    if (!blob) {
+      toast.error('Recording not found')
+      return
+    }
+
+    setGeneratingTranscriptionId(recording.id)
+    try {
+      await onGenerateTranscription(recording, blob)
+      toast.success('Transcription generated successfully')
+    } catch (error) {
+      toast.error('Failed to generate transcription')
+    } finally {
+      setGeneratingTranscriptionId(null)
+    }
   }
 
   if (selectedRecording) {
@@ -364,7 +391,7 @@ export function CallRecordingsViewer({
                                 {formatDate(new Date(recording.timestamp).toISOString())}
                               </p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 onClick={() => handlePlayRecording(recording)}
                                 size="sm"
@@ -373,6 +400,22 @@ export function CallRecordingsViewer({
                                 <Play size={16} weight="fill" />
                                 Play
                               </Button>
+                              {onGenerateTranscription && (
+                                <Button
+                                  onClick={() => handleGenerateTranscription(recording)}
+                                  variant={hasTranscription?.(recording.id) ? "secondary" : "default"}
+                                  size="sm"
+                                  className="gap-1"
+                                  disabled={generatingTranscriptionId === recording.id}
+                                >
+                                  <Sparkle size={16} weight={hasTranscription?.(recording.id) ? "fill" : "regular"} />
+                                  {generatingTranscriptionId === recording.id
+                                    ? 'Generating...'
+                                    : hasTranscription?.(recording.id)
+                                    ? 'Regenerate'
+                                    : 'Transcribe'}
+                                </Button>
+                              )}
                               <Button
                                 onClick={() => handleDownload(recording)}
                                 variant="outline"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWebRTC, type CallType } from '@/hooks/use-webrtc'
 import { useCallRecording } from '@/hooks/use-call-recording'
+import { useCallTranscription } from '@/hooks/use-call-transcription'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CallRecordingsViewer } from '@/components/CallRecordingsViewer'
+import { CallTranscriptionViewer } from '@/components/CallTranscriptionViewer'
 import { 
   Phone, 
   PhoneDisconnect, 
@@ -26,7 +28,8 @@ import {
   Stop,
   Pause,
   Play,
-  FilmStrip
+  FilmStrip,
+  Sparkle,
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -78,11 +81,19 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
     downloadRecording,
   } = useCallRecording(groupRoomId)
 
+  const {
+    transcriptions,
+    isTranscribing,
+    transcribeRecording,
+    getTranscriptionForRecording,
+    deleteTranscription,
+  } = useCallTranscription()
+
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [callTypeSelection, setCallTypeSelection] = useState<CallType>('video')
   const [isGridView, setIsGridView] = useState(true)
-  const [activeTab, setActiveTab] = useState<'call' | 'recordings'>('call')
+  const [activeTab, setActiveTab] = useState<'call' | 'recordings' | 'transcriptions'>('call')
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map())
@@ -221,6 +232,26 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
     return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
   }
 
+  const handleGenerateTranscription = async (recording: any, blob: Blob) => {
+    try {
+      await transcribeRecording(
+        recording.id,
+        blob,
+        recording.participants,
+        recording.duration
+      )
+      toast.success('Transcription generated successfully!')
+    } catch (error) {
+      toast.error('Failed to generate transcription')
+      throw error
+    }
+  }
+
+  const handleDeleteTranscription = (transcriptionId: string) => {
+    deleteTranscription(transcriptionId)
+    toast.success('Transcription deleted')
+  }
+
   if (!watchlistId) {
     return (
       <Alert>
@@ -274,8 +305,8 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'call' | 'recordings')}>
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'call' | 'recordings' | 'transcriptions')}>
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="call" className="gap-2">
                 <VideoCamera size={20} weight="duotone" />
                 Active Call
@@ -283,6 +314,10 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
               <TabsTrigger value="recordings" className="gap-2">
                 <FilmStrip size={20} weight="duotone" />
                 Recordings ({recordings.length})
+              </TabsTrigger>
+              <TabsTrigger value="transcriptions" className="gap-2">
+                <Sparkle size={20} weight="duotone" />
+                Transcriptions ({transcriptions.length})
               </TabsTrigger>
             </TabsList>
 
@@ -654,6 +689,15 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
                 onDelete={deleteRecording}
                 onDownload={downloadRecording}
                 getRecordingBlob={getRecordingBlob}
+                onGenerateTranscription={handleGenerateTranscription}
+                hasTranscription={(recordingId) => !!getTranscriptionForRecording(recordingId)}
+              />
+            </TabsContent>
+
+            <TabsContent value="transcriptions" className="mt-6">
+              <CallTranscriptionViewer
+                transcriptions={transcriptions}
+                onDelete={handleDeleteTranscription}
               />
             </TabsContent>
           </Tabs>
@@ -671,6 +715,9 @@ export function GroupVideoCall({ watchlistId, watchlistMembers, currentUser }: G
             <li>Record calls with start/pause/stop controls</li>
             <li>Playback recordings with full video and audio controls</li>
             <li>Download recordings for offline viewing</li>
+            <li>AI-powered transcription with automatic summaries</li>
+            <li>Extract key topics and action items from calls</li>
+            <li>Sentiment analysis to understand meeting tone</li>
             <li>See real-time status of all participants</li>
             <li>Peer-to-peer connections for optimal quality</li>
             <li>Your browser will request camera/microphone permissions when joining</li>
