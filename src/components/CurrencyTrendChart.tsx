@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { TrendUp, TrendDown, ArrowsClockwise, Warning, ChartLine, ChartBar, ChartLineUp, Percent } from '@phosphor-icons/react'
@@ -31,8 +30,9 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
   const [timeRange, setTimeRange] = useState<number>(7)
   const [chartType, setChartType] = useState<ChartType>('line')
 
+  // Safety: Ensure selected currency actually exists in provided rates
   useEffect(() => {
-    if (!rates.some(rate => rate.currencyCode === selectedCurrency)) {
+    if (rates.length > 0 && !rates.some(rate => rate.currencyCode === selectedCurrency)) {
       setSelectedCurrency(defaultCurrency)
     }
   }, [rates, selectedCurrency, defaultCurrency])
@@ -40,7 +40,9 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
   const { data: historicalData, isLoading, error, refetch } = useHistoricalRates(selectedCurrency, timeRange)
 
   const chartData = useMemo(() => {
-    const dataWithChanges = historicalData.map((point, index, array) => {
+    if (!historicalData) return []
+    
+    return historicalData.map((point, index, array) => {
       let percentChange = 0
       let absoluteChange = 0
       
@@ -58,8 +60,6 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
         absoluteChange: Number(absoluteChange.toFixed(4)),
       }
     })
-    
-    return dataWithChanges
   }, [historicalData])
 
   const trendAnalysis = useMemo(() => {
@@ -157,7 +157,6 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
                   <SelectItem value="14">Last 14 Days</SelectItem>
                   <SelectItem value="30">Last 30 Days</SelectItem>
                   <SelectItem value="60">Last 60 Days</SelectItem>
-                  <SelectItem value="90">Last 90 Days</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -294,23 +293,6 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
                   </div>
                 </Card>
               </div>
-
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-muted-foreground">Movement:</span>
-                <Badge variant="default" className="gap-1 bg-accent/20 text-accent border-accent/30">
-                  <TrendUp size={14} weight="bold" />
-                  {trendAnalysis.positiveDays} days
-                </Badge>
-                <Badge variant="default" className="gap-1 bg-destructive/20 text-destructive border-destructive/30">
-                  <TrendDown size={14} weight="bold" />
-                  {trendAnalysis.negativeDays} days
-                </Badge>
-                {trendAnalysis.stableDays > 0 && (
-                  <Badge variant="outline" className="gap-1">
-                    {trendAnalysis.stableDays} stable
-                  </Badge>
-                )}
-              </div>
             </>
           )}
         </div>
@@ -323,63 +305,26 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
             <AlertDescription className="ml-2">
               <div className="space-y-2">
                 <div className="font-medium whitespace-pre-line">{error}</div>
-                {!rates.some(r => r.currencyCode === selectedCurrency) ? (
-                  <>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    className="gap-2"
+                  >
+                    <ArrowsClockwise size={14} weight="bold" />
+                    Try Again
+                  </Button>
+                  {timeRange > 7 && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const availableCurrency = rates.find(r => 
-                          ['USD', 'EUR', 'GBP', 'JPY'].includes(r.currencyCode)
-                        ) || rates[0]
-                        if (availableCurrency) {
-                          setSelectedCurrency(availableCurrency.currencyCode)
-                        }
-                      }}
-                      className="mt-2 gap-2"
+                      onClick={() => setTimeRange(7)}
                     >
-                      Select Available Currency
+                      Try 7 Days
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refetch()}
-                        className="gap-2"
-                      >
-                        <ArrowsClockwise size={14} weight="bold" />
-                        Try Again
-                      </Button>
-                      {timeRange > 7 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTimeRange(7)}
-                        >
-                          Try 7 Days
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const commonCurrencies = ['EUR', 'GBP', 'JPY', 'AUD', 'CAD']
-                          const availableCurrency = sortedRates.find(r => 
-                            commonCurrencies.includes(r.currencyCode) && r.currencyCode !== selectedCurrency
-                          )
-                          if (availableCurrency) {
-                            setSelectedCurrency(availableCurrency.currencyCode)
-                          }
-                        }}
-                      >
-                        Try Different Currency
-                      </Button>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </AlertDescription>
           </Alert>
@@ -394,9 +339,6 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
                 <p className="text-sm text-muted-foreground">
                   Fetching {timeRange} days of {selectedCurrency} exchange rates...
                 </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  This may take a moment as we retrieve data from CNB
-                </p>
               </div>
             </div>
           </div>
@@ -407,139 +349,34 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
             <ResponsiveContainer width="100%" height={400}>
               <>
                 {chartType === 'line' && (
-                  <LineChart 
-                    data={chartData}
-                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-                  >
+                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                      domain={['auto', 'auto']}
-                      tickFormatter={(value) => value.toFixed(2)}
-                    />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
                     <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '0.5rem',
-                        padding: '12px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600, marginBottom: '8px' }}
-                      formatter={(value: number, name: string, props: any) => {
-                        const percentChange = props.payload.percentChange
-                        const changeColor = percentChange > 0 ? 'hsl(var(--accent))' : percentChange < 0 ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))'
-                        
-                        return [
-                          <div key="rate" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ color: 'hsl(var(--primary))' }}>
-                              <strong>{value.toFixed(3)} CZK</strong>
-                            </div>
-                            {percentChange !== 0 && (
-                              <div style={{ color: changeColor, fontSize: '0.875rem' }}>
-                                {percentChange > 0 ? '↑' : '↓'} {percentChange > 0 ? '+' : ''}{percentChange.toFixed(2)}% from previous day
-                              </div>
-                            )}
-                          </div>,
-                          'Rate'
-                        ]
-                      }}
-                      labelFormatter={(label, payload) => {
-                        if (payload && payload[0]) {
-                          return formatDate(payload[0].payload.fullDate)
-                        }
-                        return label
-                      }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                      formatter={(value: number) => [`${value.toFixed(3)} CZK`, 'Rate']}
                     />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="line"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="rate" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2.5}
-                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                      activeDot={{ r: 6, fill: 'hsl(var(--accent))' }}
-                      name={`${selectedCurrency} / CZK`}
-                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="rate" stroke="hsl(var(--primary))" strokeWidth={2.5} name={`${selectedCurrency} / CZK`} />
                   </LineChart>
                 )}
                 
                 {chartType === 'bar' && (
-                  <BarChart 
-                    data={chartData}
-                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-                  >
+                  <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                      domain={['auto', 'auto']}
-                      tickFormatter={(value) => value.toFixed(2)}
-                    />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
                     <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '0.5rem',
-                        padding: '12px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600, marginBottom: '8px' }}
-                      formatter={(value: number, name: string, props: any) => {
-                        const percentChange = props.payload.percentChange
-                        const changeColor = percentChange > 0 ? 'hsl(var(--accent))' : percentChange < 0 ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))'
-                        
-                        return [
-                          <div key="rate" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ color: 'hsl(var(--primary))' }}>
-                              <strong>{value.toFixed(3)} CZK</strong>
-                            </div>
-                            {percentChange !== 0 && (
-                              <div style={{ color: changeColor, fontSize: '0.875rem' }}>
-                                {percentChange > 0 ? '↑' : '↓'} {percentChange > 0 ? '+' : ''}{percentChange.toFixed(2)}% from previous day
-                              </div>
-                            )}
-                          </div>,
-                          'Rate'
-                        ]
-                      }}
-                      labelFormatter={(label, payload) => {
-                        if (payload && payload[0]) {
-                          return formatDate(payload[0].payload.fullDate)
-                        }
-                        return label
-                      }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                      formatter={(value: number) => [`${value.toFixed(3)} CZK`, 'Rate']}
                     />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="rect"
-                    />
-                    <Bar 
-                      dataKey="rate" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]}
-                      name={`${selectedCurrency} / CZK`}
-                    />
+                    <Bar dataKey="rate" fill="hsl(var(--primary))" name={`${selectedCurrency} / CZK`} />
                   </BarChart>
                 )}
-                
+
                 {chartType === 'area' && (
-                  <AreaChart 
-                    data={chartData}
-                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-                  >
+                   <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                     <defs>
                       <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
@@ -547,171 +384,34 @@ export function CurrencyTrendChart({ rates }: CurrencyTrendChartProps) {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                      domain={['auto', 'auto']}
-                      tickFormatter={(value) => value.toFixed(2)}
-                    />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
                     <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '0.5rem',
-                        padding: '12px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600, marginBottom: '8px' }}
-                      formatter={(value: number, name: string, props: any) => {
-                        const percentChange = props.payload.percentChange
-                        const changeColor = percentChange > 0 ? 'hsl(var(--accent))' : percentChange < 0 ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))'
-                        
-                        return [
-                          <div key="rate" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ color: 'hsl(var(--primary))' }}>
-                              <strong>{value.toFixed(3)} CZK</strong>
-                            </div>
-                            {percentChange !== 0 && (
-                              <div style={{ color: changeColor, fontSize: '0.875rem' }}>
-                                {percentChange > 0 ? '↑' : '↓'} {percentChange > 0 ? '+' : ''}{percentChange.toFixed(2)}% from previous day
-                              </div>
-                            )}
-                          </div>,
-                          'Rate'
-                        ]
-                      }}
-                      labelFormatter={(label, payload) => {
-                        if (payload && payload[0]) {
-                          return formatDate(payload[0].payload.fullDate)
-                        }
-                        return label
-                      }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                      formatter={(value: number) => [`${value.toFixed(3)} CZK`, 'Rate']}
                     />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="rect"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="rate" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2.5}
-                      fill="url(#colorRate)"
-                      name={`${selectedCurrency} / CZK`}
-                    />
+                    <Area type="monotone" dataKey="rate" stroke="hsl(var(--primary))" fill="url(#colorRate)" name={`${selectedCurrency} / CZK`} />
                   </AreaChart>
                 )}
 
                 {chartType === 'change' && (
-                  <ComposedChart 
-                    data={chartData.slice(1)}
-                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-                  >
+                  <ComposedChart data={chartData.slice(1)} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                      tickFormatter={(value) => `${value.toFixed(2)}%`}
-                    />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis tickFormatter={(value) => `${value.toFixed(2)}%`} />
                     <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '0.5rem',
-                        padding: '12px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600, marginBottom: '8px' }}
-                      formatter={(value: number, name: string) => {
-                        const changeColor = value > 0 ? 'hsl(var(--accent))' : value < 0 ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))'
-                        
-                        return [
-                          <div key="change" style={{ color: changeColor }}>
-                            <strong>{value > 0 ? '+' : ''}{value.toFixed(3)}%</strong>
-                          </div>,
-                          'Daily Change'
-                        ]
-                      }}
-                      labelFormatter={(label, payload) => {
-                        if (payload && payload[0]) {
-                          return formatDate(payload[0].payload.fullDate)
-                        }
-                        return label
-                      }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
                     />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="rect"
-                    />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={2} />
-                    <Bar 
-                      dataKey="percentChange" 
-                      name="Daily % Change"
-                      radius={[4, 4, 4, 4]}
-                    >
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                    <Bar dataKey="percentChange" name="Daily % Change">
                       {chartData.slice(1).map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.percentChange > 0 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'}
-                        />
+                        <Cell key={`cell-${index}`} fill={entry.percentChange > 0 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'} />
                       ))}
                     </Bar>
                   </ComposedChart>
                 )}
               </>
             </ResponsiveContainer>
-            
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              <p>
-                {chartType === 'change' 
-                  ? `Showing ${chartData.length - 1} daily changes (excludes weekends)` 
-                  : `Showing ${chartData.length} data points (excludes weekends)`
-                }
-              </p>
-            </div>
-          </div>
-        )}
-
-        {!isLoading && !error && chartData.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Warning size={48} weight="light" className="text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">No Historical Data Available</p>
-            <p className="text-sm text-muted-foreground max-w-md mb-4">
-              Unable to retrieve historical data for {selectedCurrency}. Try selecting a different currency or a shorter time range.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTimeRange(7)}
-                disabled={timeRange === 7}
-              >
-                Try 7 Days
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const commonCurrencies = ['EUR', 'GBP', 'JPY', 'AUD', 'CAD']
-                  const availableCurrency = sortedRates.find(r => 
-                    commonCurrencies.includes(r.currencyCode) && r.currencyCode !== selectedCurrency
-                  )
-                  if (availableCurrency) {
-                    setSelectedCurrency(availableCurrency.currencyCode)
-                  }
-                }}
-              >
-                Try Different Currency
-              </Button>
-            </div>
           </div>
         )}
       </CardContent>

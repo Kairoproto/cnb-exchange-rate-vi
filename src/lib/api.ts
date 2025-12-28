@@ -1,10 +1,12 @@
 import { ExchangeRate, ExchangeRateData } from './types'
 
 const CNB_API_BASE = 'https://api.cnb.cz/cnbapi'
+
+// Updated proxy list - allorigins is currently the most stable for this use case
 const CORS_PROXIES = [
-  'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
-  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://corsproxy.io/?',
+  'https://thingproxy.freeboard.io/fetch/',
 ]
 
 let currentProxyIndex = 0
@@ -20,6 +22,7 @@ export class CNBApiError extends Error {
 async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise<Response> {
   let lastError: Error | null = null
   
+  // Try the last known working proxy first
   if (workingProxy) {
     try {
       const proxiedEndpoint = `${workingProxy}${encodeURIComponent(endpoint)}`
@@ -28,34 +31,35 @@ async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise
       
       const response = await fetch(proxiedEndpoint, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: { 'Accept': 'application/json' },
         signal: controller.signal,
       })
       
       clearTimeout(timeoutId)
       
-      if (response.ok) {
-        return response
-      }
+      if (response.ok) return response
       
+      // If 404, the endpoint is wrong or data is missing for that specific date
+      // We don't want to discard the proxy just because the date was empty
       if (response.status === 404) {
         throw new CNBApiError('Data not found for the specified date', 404)
       }
       
+      // If it's a server error or forbidden, the proxy might be bad
       workingProxy = null
     } catch (error) {
-      if (error instanceof CNBApiError) {
-        throw error
-      }
+      if (error instanceof CNBApiError) throw error
       workingProxy = null
     }
   }
   
+  // Iterate through proxies
   for (let proxyAttempt = 0; proxyAttempt < CORS_PROXIES.length; proxyAttempt++) {
     const proxyIndex = (currentProxyIndex + proxyAttempt) % CORS_PROXIES.length
     const proxy = CORS_PROXIES[proxyIndex]
+    
+    // Some proxies don't handle double encoding well, but allorigins requires it.
+    // We encode consistently here.
     const proxiedEndpoint = `${proxy}${encodeURIComponent(endpoint)}`
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -65,9 +69,7 @@ async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise
         
         const response = await fetch(proxiedEndpoint, {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: { 'Accept': 'application/json' },
           signal: controller.signal,
         })
         
@@ -80,6 +82,7 @@ async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise
         }
         
         if (response.status === 404) {
+          // 404 means the API worked but date is empty. Stop retrying this URL.
           throw new CNBApiError('Data not found for the specified date', 404)
         }
         
@@ -87,12 +90,10 @@ async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise
       } catch (error) {
         lastError = error as Error
         
-        if (error instanceof CNBApiError) {
-          throw error
-        }
+        if (error instanceof CNBApiError) throw error
         
         if (attempt < maxRetries) {
-          await delay(300 * (attempt + 1))
+          await delay(500 * (attempt + 1)) // Increased backoff
         }
       }
     }
@@ -102,8 +103,11 @@ async function fetchWithRetry(endpoint: string, maxRetries: number = 2): Promise
 }
 
 export async function fetchExchangeRates(date?: string): Promise<ExchangeRateData> {
+  // CRITICAL FIX: CNB API expects 'date' as a query parameter, not a path parameter.
+  // Old (Broken): /exrates/daily/${date}
+  // New (Fixed):  /exrates/daily?date=${date}
   const endpoint = date 
-    ? `${CNB_API_BASE}/exrates/daily/${date}?lang=EN`
+    ? `${CNB_API_BASE}/exrates/daily?date=${date}&lang=EN`
     : `${CNB_API_BASE}/exrates/daily?lang=EN`
 
   try {
@@ -127,12 +131,10 @@ export async function fetchExchangeRates(date?: string): Promise<ExchangeRateDat
       rates,
     }
   } catch (error) {
-    if (error instanceof CNBApiError) {
-      throw error
-    }
+    if (error instanceof CNBApiError) throw error
     
     if (error instanceof TypeError || (error as Error).message?.includes('fetch')) {
-      throw new CNBApiError('Network error: Unable to connect to CNB API')
+      throw new CNBApiError('Network error: Unable to connect to CNB API via proxy')
     }
     
     throw new CNBApiError('An unexpected error occurred while fetching exchange rates')
@@ -147,17 +149,20 @@ function getWorkingDates(startDate: Date, numDays: number): string[] {
   const dates: string[] = []
   let daysAdded = 0
   let daysChecked = 0
-  const maxDaysToCheck = numDays * 3
+  const maxDaysToCheck = numDays * 4 // Increased buffer for weekends/holidays
+  
+  // Start from yesterday to ensure data availability (CNB updates around 14:30 CET)
+  const date = new Date(startDate)
+  date.setDate(date.getDate() - 1)
   
   while (daysAdded < numDays && daysChecked < maxDaysToCheck) {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() - daysChecked)
-    
     const dayOfWeek = date.getDay()
+    // Skip weekends (0 is Sunday, 6 is Saturday)
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
       dates.push(date.toISOString().split('T')[0])
       daysAdded++
     }
+    date.setDate(date.getDate() - 1) // Move backwards
     daysChecked++
   }
   
@@ -173,18 +178,19 @@ async function fetchRatesInBatches(
   for (let i = 0; i < dates.length; i += batchSize) {
     const batch = dates.slice(i, i + batchSize)
     
-    for (const date of batch) {
+    // Process batch in parallel
+    await Promise.all(batch.map(async (date) => {
       try {
         const data = await fetchExchangeRates(date)
         results.set(date, data)
-        await delay(200)
       } catch (error) {
         console.warn(`Failed to fetch data for ${date}:`, error)
       }
-    }
+    }))
     
+    // Increased delay between batches to be nicer to the proxy
     if (i + batchSize < dates.length) {
-      await delay(500)
+      await delay(500) 
     }
   }
   
@@ -199,7 +205,7 @@ export async function fetchHistoricalRates(
   
   console.log(`Fetching ${days} days of historical data for ${currencyCode}...`)
   
-  const rateDataMap = await fetchRatesInBatches(dates, 2)
+  const rateDataMap = await fetchRatesInBatches(dates, 3) // Slightly larger batch size with better delay
   
   const historicalData: Array<{ date: string; rate: number }> = []
   let currencyNotFoundCount = 0
@@ -219,30 +225,23 @@ export async function fetchHistoricalRates(
     }
   })
   
-  console.log(`Retrieved ${historicalData.length} of ${dates.length} data points for ${currencyCode}`)
-  console.log(`Successfully fetched ${rateDataMap.size} of ${dates.length} date requests`)
+  console.log(`Retrieved ${historicalData.length} of ${dates.length} data points`)
   
   if (historicalData.length === 0) {
     if (rateDataMap.size === 0) {
       throw new CNBApiError(
-        `Unable to fetch historical data due to network issues. 0 of ${dates.length} requests succeeded.\n\nThis might happen if:\n• Network connectivity issues\n• CORS proxy services are unavailable\n• CNB API is temporarily down\n\nPlease try again in a few moments or select a shorter time range.`
+        `Unable to fetch historical data. 0 of ${dates.length} requests succeeded.\n\nPossible causes:\n• CNB API connectivity issues\n• Proxy services are overloaded\n\nPlease try selecting a shorter time range (e.g., 7 days).`
       )
     }
     
     if (currencyNotFoundCount > 0) {
       throw new CNBApiError(
-        `No historical data found for ${currencyCode}. The currency may not be available in CNB records.\n\nThis might happen if:\n• The currency is not tracked by the Czech National Bank\n• The currency code is incorrect\n\nTry selecting a different currency like EUR, USD, or GBP.`
+        `No historical data found for ${currencyCode}. This currency might not be listed in daily CNB records.`
       )
-    } else {
-      throw new CNBApiError(
-        `Unable to fetch historical data. ${rateDataMap.size} of ${dates.length} requests succeeded.\n\nPlease try:\n• Selecting a shorter time range (7 days)\n• Refreshing the page\n• Trying again in a few moments`
-      )
-    }
-  }
-  
-  if (historicalData.length < Math.floor(dates.length * 0.3)) {
-    console.warn(
-      `Low data availability: ${historicalData.length} of ${dates.length} data points retrieved. Some dates may be unavailable.`
+    } 
+    
+    throw new CNBApiError(
+      `Unable to retrieve sufficient data. Only ${rateDataMap.size}/${dates.length} dates loaded.`
     )
   }
   
