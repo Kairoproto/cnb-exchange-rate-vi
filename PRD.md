@@ -61,6 +61,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Progression**: User clicks export dropdown → Selects format (CSV/JSON/PDF) → File is generated with formatted data → Browser downloads file → Success toast notification shown
 - **Success criteria**: Files download correctly with all exchange rate data; CSV is spreadsheet-compatible; JSON is properly structured with metadata; PDF is readable and printable; filenames include date for organization; toast notifications confirm successful exports
 
+### Multi-Date Comparison Mode
+- **Functionality**: Enables users to select and compare exchange rates across multiple dates (up to 5) with visual change indicators showing percentage differences from a baseline date
+- **Purpose**: Provides powerful analysis tools for tracking currency rate movements over custom time periods, helping users identify trends and make informed financial decisions
+- **Trigger**: User switches to "Comparison Mode" tab and selects dates via calendar or quick-add buttons
+- **Progression**: User switches to comparison tab → Selects first date (becomes baseline) → Adds additional dates using calendar picker or quick buttons (yesterday, 1 week ago, 1 month ago, 3 months ago) → Each date is fetched from CNB API → Comparison table displays with all currencies → Shows rate values and percentage changes from baseline → Color-coded indicators (green=increase, red=decrease) → User can filter currencies, sort by country/code → Remove individual dates or clear all → Refresh all comparison data
+- **Success criteria**: Up to 5 dates can be selected; weekends auto-excluded; percentage changes accurately calculated from baseline date; color-coded trend indicators (green up, red down, gray neutral); sortable and filterable comparison table; smooth loading states with toast notifications; individual date removal without refetching; clear visual distinction between baseline and comparison dates; mobile-responsive with proper date badge wrapping
+
 ## Edge Case Handling
 
 - **API Timeout/Network Failure**: Display friendly error message with retry button, automatic proxy fallback, and troubleshooting hints
@@ -80,6 +87,15 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Export Failure**: Catch and display friendly error messages if file generation fails
 - **Large Data Sets**: Ensure export works efficiently even with full currency dataset
 - **Special Characters in Data**: Properly escape currency names and countries in CSV/JSON/PDF output
+- **Comparison Mode - Maximum Dates**: Prevent adding more than 5 dates with clear messaging
+- **Comparison Mode - Duplicate Dates**: Block duplicate date selection silently
+- **Comparison Mode - Weekend Selection**: Automatically skip weekends when using quick-add buttons
+- **Comparison Mode - Future Dates**: Disable future date selection in calendar picker
+- **Comparison Mode - Missing Data**: Show "N/A" for currencies not available on specific dates
+- **Comparison Mode - Empty State**: Display helpful prompt when no dates are selected
+- **Comparison Mode - Single Date**: Show only rate values without percentage changes when comparing single date
+- **Comparison Mode - API Failures**: Handle individual date fetch failures gracefully without breaking entire comparison
+- **Comparison Mode - Tab Switching**: Preserve both current rates and comparison data when switching between tabs
 
 ## Design Direction
 
@@ -124,16 +140,19 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Card component for main data container with subtle shadow
   - Table component with sortable headers and hover states
   - Button component for refresh action (with loading state)
-  - Badge component for currency codes
+  - Badge component for currency codes and selected date chips
   - Alert component for error messages
   - Skeleton component for loading states
-  - Input component for currency converter amount entry
+  - Input component for currency converter amount entry and filtering
   - Select component for currency selection dropdowns and chart type selector
   - Label component for form field labels
   - Recharts LineChart, BarChart, and AreaChart for historical trend visualization
   - Tooltip component for chart data point details
   - Legend component for chart data series identification
   - DropdownMenu component for export format selection
+  - Tabs component for switching between current rates and comparison mode
+  - Calendar component for date selection in comparison mode
+  - Popover component for calendar picker presentation
 - **Customizations**: 
   - Custom table styling with alternating row backgrounds for easier scanning
   - Monospace font override for numeric columns
@@ -153,15 +172,22 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Bank for CNB branding
   - CaretUp/CaretDown for sortable columns
   - ArrowsLeftRight for currency swap functionality
-  - Equals for conversion result indicator
-  - TrendUp/TrendDown for chart trend indicators
-  - ChartLine for line chart selector
+  - Equals for conversion result indicator and neutral change
+  - TrendUp/TrendDown for chart trend indicators and comparison changes
+  - ChartLine for line chart selector and current rates tab
   - ChartBar for bar chart selector
   - ChartLineUp for area chart selector
   - DownloadSimple for export functionality
   - FileCsv for CSV format option
   - FileJs for JSON format option
   - FileText for PDF format option
+  - CalendarCheck for comparison mode tab
+  - CalendarBlank for date selector
+  - CalendarPlus for empty comparison state
+  - Plus for add date button
+  - X for remove date badges
+  - Trash for clear all comparison dates
+  - Info for informational alerts
 - **Spacing**: 
   - Container padding: p-6 (24px)
   - Card spacing: gap-6 between major sections
@@ -181,3 +207,7 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Stack chart controls (currency selector, time range, chart type) into 2x2 grid on mobile
   - Export button wraps to new line on mobile for better accessibility
   - Export dropdown menu aligned properly on small screens
+  - Comparison mode date badges wrap properly in small containers
+  - Quick-add buttons stack vertically on very small screens
+  - Comparison table remains horizontally scrollable with fixed currency column
+  - Tab navigation switches to full-width buttons on mobile
