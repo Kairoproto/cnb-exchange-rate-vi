@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useFilterPresets, FilterPreset } from '@/hooks/use-filter-presets'
+import { usePresetAnalytics } from '@/hooks/use-preset-analytics'
 import { PresetRecommendations } from '@/components/PresetRecommendations'
+import { PresetUsageAnalytics } from '@/components/PresetUsageAnalytics'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +48,7 @@ import {
   Tag,
   Plus,
   Sparkle,
+  ChartBar,
 } from '@phosphor-icons/react'
 import { cn, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -70,6 +73,8 @@ export function FilterPresetManager({
     duplicatePreset,
     getPresetsByCategory,
   } = useFilterPresets()
+  
+  const { trackUsage } = usePresetAnalytics()
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -79,6 +84,7 @@ export function FilterPresetManager({
   const [presetCategory, setPresetCategory] = useState<FilterPreset['category']>(filterType)
   const [filterCategory, setFilterCategory] = useState<FilterPreset['category'] | 'all'>('all')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'usage'>('date')
+  const [activeTab, setActiveTab] = useState<'presets' | 'analytics'>('presets')
 
   const handleSavePreset = () => {
     if (!presetName.trim()) {
@@ -120,6 +126,7 @@ export function FilterPresetManager({
   const handleApplyPreset = (preset: FilterPreset) => {
     onApplyPreset(preset.filters)
     incrementUseCount(preset.id)
+    trackUsage(preset.id, preset.name, preset.category)
     toast.success(`Applied preset: ${preset.name}`)
   }
 
@@ -181,7 +188,20 @@ export function FilterPresetManager({
         currentFilters={currentFilters}
       />
 
-      <Card>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="presets" className="gap-2">
+            <FolderOpen size={18} weight="duotone" />
+            My Presets
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2">
+            <ChartBar size={18} weight="duotone" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="presets" className="mt-6">
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -400,6 +420,12 @@ export function FilterPresetManager({
         )}
       </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <PresetUsageAnalytics />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
