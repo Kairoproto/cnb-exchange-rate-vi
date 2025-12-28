@@ -24,6 +24,7 @@ import {
 } from '@phosphor-icons/react'
 import type { TranscriptionData } from '@/hooks/use-call-transcription'
 import { formatDate } from '@/lib/utils'
+import { AdvancedSearchFilters, type AdvancedFilters } from './AdvancedSearchFilters'
 
 interface TranscriptionSearchProps {
   transcriptions: TranscriptionData[]
@@ -59,92 +60,158 @@ function highlightText(text: string, query: string): string {
 
 export function TranscriptionSearch({ transcriptions, onSelectTranscription }: TranscriptionSearchProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterSentiment, setFilterSentiment] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'relevance' | 'date' | 'duration'>('relevance')
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    dateRange: { from: undefined, to: undefined },
+    participants: [],
+    participantCount: { min: undefined, max: undefined },
+    callType: 'all',
+    duration: { min: undefined, max: undefined },
+    hasTranscription: undefined,
+    sentiment: 'all',
+    sortBy: 'relevance',
+    sortOrder: 'desc',
+  })
+
+  const availableParticipants = useMemo(() => {
+    const participants = new Set<string>()
+    transcriptions.forEach((t) => {
+      t.segments.forEach((s) => {
+        if (s.speaker && s.speaker !== 'Unknown') {
+          participants.add(s.speaker)
+        }
+      })
+    })
+    return Array.from(participants).sort()
+  }, [transcriptions])
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim() && filterSentiment === 'all') {
-      return transcriptions
-        .filter(t => t.status === 'completed')
-        .map(transcription => ({
-          transcription,
-          matchedSegments: [],
-          matchType: 'segment' as const,
-          matchCount: 0,
-        }))
+    let results = transcriptions.filter(t => t.status === 'completed')
+
+    if (advancedFilters.dateRange.from) {
+      results = results.filter(t => {
+        const transcriptionDate = new Date(t.timestamp)
+        return transcriptionDate >= advancedFilters.dateRange.from!
+      })
+    }
+
+    if (advancedFilters.dateRange.to) {
+      results = results.filter(t => {
+        const transcriptionDate = new Date(t.timestamp)
+        const endOfDay = new Date(advancedFilters.dateRange.to!)
+        endOfDay.setHours(23, 59, 59, 999)
+        return transcriptionDate <= endOfDay
+      })
+    }
+
+    if (advancedFilters.participants.length > 0) {
+      results = results.filter(t => {
+        const speakers = new Set(t.segments.map(s => s.speaker))
+        return advancedFilters.participants.some(p => speakers.has(p))
+      })
+    }
+
+    if (advancedFilters.participantCount.min !== undefined) {
+      results = results.filter(t => t.participantCount >= advancedFilters.participantCount.min!)
+    }
+
+    if (advancedFilters.participantCount.max !== undefined) {
+      results = results.filter(t => t.participantCount <= advancedFilters.participantCount.max!)
+    }
+
+    if (advancedFilters.duration.min !== undefined) {
+      results = results.filter(t => t.duration >= advancedFilters.duration.min! * 60)
+    }
+
+    if (advancedFilters.duration.max !== undefined) {
+      results = results.filter(t => t.duration <= advancedFilters.duration.max! * 60)
+    }
+
+    if (advancedFilters.sentiment !== 'all') {
+      results = results.filter(t => t.sentiment === advancedFilters.sentiment)
+    }
+
+    if (advancedFilters.callType !== 'all') {
+      results = results.filter(t => {
+        if (advancedFilters.callType === 'group') {
+          return t.participantCount > 2
+        }
+        return true
+      })
+    }
+
+    if (advancedFilters.hasTranscription === true) {
+      results = results.filter(t => t.segments.length > 0)
     }
 
     const query = searchQuery.toLowerCase().trim()
-    const results: SearchMatch[] = []
+    const searchMatches: SearchMatch[] = []
 
-    transcriptions
-      .filter(t => t.status === 'completed')
-      .forEach((transcription) => {
-        if (filterSentiment !== 'all' && transcription.sentiment !== filterSentiment) {
-          return
-        }
+    results.forEach((transcription) => {
+      let matchCount = 0
+      const matchedSegments: SearchMatch['matchedSegments'] = []
+      let matchType: SearchMatch['matchType'] = 'segment'
 
-        let matchCount = 0
-        const matchedSegments: SearchMatch['matchedSegments'] = []
-        let matchType: SearchMatch['matchType'] = 'segment'
-
-        if (query) {
-          transcription.segments.forEach((segment) => {
-            if (segment.text.toLowerCase().includes(query) || segment.speaker.toLowerCase().includes(query)) {
-              matchCount++
-              matchedSegments.push({
-                segment,
-                highlightedText: highlightText(segment.text, query),
-              })
-            }
-          })
-
-          if (transcription.summary.toLowerCase().includes(query)) {
-            matchCount += 5
-            matchType = 'summary'
+      if (query) {
+        transcription.segments.forEach((segment) => {
+          if (segment.text.toLowerCase().includes(query) || segment.speaker.toLowerCase().includes(query)) {
+            matchCount++
+            matchedSegments.push({
+              segment,
+              highlightedText: highlightText(segment.text, query),
+            })
           }
+        })
 
-          transcription.keyTopics.forEach((topic) => {
-            if (topic.toLowerCase().includes(query)) {
-              matchCount += 3
-              matchType = 'topic'
-            }
-          })
-
-          transcription.actionItems.forEach((item) => {
-            if (item.toLowerCase().includes(query)) {
-              matchCount += 3
-              matchType = 'actionItem'
-            }
-          })
-        } else {
-          matchCount = 1
+        if (transcription.summary.toLowerCase().includes(query)) {
+          matchCount += 5
+          matchType = 'summary'
         }
 
-        if (matchCount > 0 || !query) {
-          results.push({
-            transcription,
-            matchedSegments,
-            matchType,
-            matchCount,
-          })
-        }
-      })
+        transcription.keyTopics.forEach((topic) => {
+          if (topic.toLowerCase().includes(query)) {
+            matchCount += 3
+            matchType = 'topic'
+          }
+        })
 
-    return results.sort((a, b) => {
-      switch (sortBy) {
+        transcription.actionItems.forEach((item) => {
+          if (item.toLowerCase().includes(query)) {
+            matchCount += 3
+            matchType = 'actionItem'
+          }
+        })
+      } else {
+        matchCount = 1
+      }
+
+      if (matchCount > 0 || !query) {
+        searchMatches.push({
+          transcription,
+          matchedSegments,
+          matchType,
+          matchCount,
+        })
+      }
+    })
+
+    return searchMatches.sort((a, b) => {
+      const sortOrder = advancedFilters.sortOrder === 'asc' ? 1 : -1
+      switch (advancedFilters.sortBy) {
         case 'relevance':
-          return b.matchCount - a.matchCount
+          return (b.matchCount - a.matchCount) * sortOrder
         case 'date':
-          return b.transcription.timestamp - a.transcription.timestamp
+          return (b.transcription.timestamp - a.transcription.timestamp) * sortOrder
         case 'duration':
-          return b.transcription.duration - a.transcription.duration
+          return (b.transcription.duration - a.transcription.duration) * sortOrder
+        case 'participants':
+          return (b.transcription.participantCount - a.transcription.participantCount) * sortOrder
         default:
           return 0
       }
     })
-  }, [transcriptions, searchQuery, filterSentiment, sortBy])
+  }, [transcriptions, searchQuery, advancedFilters])
 
   const toggleExpanded = (transcriptionId: string) => {
     setExpandedResults((prev) => {
@@ -160,142 +227,129 @@ export function TranscriptionSearch({ transcriptions, onSelectTranscription }: T
 
   const clearSearch = () => {
     setSearchQuery('')
-    setFilterSentiment('all')
-    setSortBy('relevance')
+    setAdvancedFilters({
+      dateRange: { from: undefined, to: undefined },
+      participants: [],
+      participantCount: { min: undefined, max: undefined },
+      callType: 'all',
+      duration: { min: undefined, max: undefined },
+      hasTranscription: undefined,
+      sentiment: 'all',
+      sortBy: 'relevance',
+      sortOrder: 'desc',
+    })
   }
 
-  const hasActiveFilters = searchQuery.trim() !== '' || filterSentiment !== 'all'
+  const hasActiveFilters = searchQuery.trim() !== '' || 
+    advancedFilters.dateRange.from !== undefined ||
+    advancedFilters.dateRange.to !== undefined ||
+    advancedFilters.participants.length > 0 ||
+    advancedFilters.participantCount.min !== undefined ||
+    advancedFilters.participantCount.max !== undefined ||
+    advancedFilters.callType !== 'all' ||
+    advancedFilters.duration.min !== undefined ||
+    advancedFilters.duration.max !== undefined ||
+    advancedFilters.hasTranscription !== undefined ||
+    advancedFilters.sentiment !== 'all'
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MagnifyingGlass size={24} weight="duotone" />
-          Search Transcriptions
-        </CardTitle>
-        <CardDescription>
-          Search across all call transcriptions, summaries, topics, and action items
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <div className="relative">
-            <MagnifyingGlass 
-              size={20} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-            />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search transcriptions, speakers, topics, action items..."
-              className="pl-10 pr-10 h-12 text-base"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-              >
-                <X size={16} />
-              </Button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Funnel size={16} className="text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MagnifyingGlass size={24} weight="duotone" />
+            Search Transcriptions
+          </CardTitle>
+          <CardDescription>
+            Search across all call transcriptions, summaries, topics, and action items
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="relative">
+              <MagnifyingGlass 
+                size={20} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+              />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search transcriptions, speakers, topics, action items..."
+                className="pl-10 pr-10 h-12 text-base"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                >
+                  <X size={16} />
+                </Button>
+              )}
             </div>
 
-            <Select value={filterSentiment} onValueChange={setFilterSentiment}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sentiments</SelectItem>
-                <SelectItem value="positive">Positive</SelectItem>
-                <SelectItem value="neutral">Neutral</SelectItem>
-                <SelectItem value="negative">Negative</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">
-                  <div className="flex items-center gap-2">
-                    <SortAscending size={14} />
-                    Relevance
-                  </div>
-                </SelectItem>
-                <SelectItem value="date">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={14} />
-                    Date
-                  </div>
-                </SelectItem>
-                <SelectItem value="duration">
-                  <div className="flex items-center gap-2">
-                    <ChatCircle size={14} />
-                    Duration
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-3">
               <Button
-                variant="ghost"
+                variant={showAdvancedFilters ? "default" : "outline"}
                 size="sm"
-                onClick={clearSearch}
-                className="gap-2 h-9"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="gap-2"
               >
-                <X size={14} />
-                Clear All
+                <Funnel size={16} weight={showAdvancedFilters ? "fill" : "regular"} />
+                Advanced Filters
               </Button>
-            )}
-          </div>
-        </div>
 
-        <Separator />
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
-              {searchQuery && (
-                <span className="ml-1">
-                  for <span className="font-semibold text-foreground">"{searchQuery}"</span>
-                </span>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="gap-2 h-9"
+                >
+                  <X size={14} />
+                  Clear All
+                </Button>
               )}
-            </p>
+            </div>
           </div>
 
-          {searchResults.length === 0 ? (
-            <Alert>
-              <Info size={20} weight="duotone" />
-              <AlertDescription>
-                {transcriptions.filter(t => t.status === 'completed').length === 0 ? (
-                  <>
-                    <p className="font-medium mb-1">No transcriptions available</p>
-                    <p className="text-sm">
-                      Generate transcriptions from your recorded calls to search through them.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-medium mb-1">No results found</p>
-                    <p className="text-sm">
-                      Try adjusting your search query or filters to find what you're looking for.
-                    </p>
-                  </>
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                {searchQuery && (
+                  <span className="ml-1">
+                    for <span className="font-semibold text-foreground">"{searchQuery}"</span>
+                  </span>
                 )}
-              </AlertDescription>
-            </Alert>
-          ) : (
+              </p>
+            </div>
+
+            {searchResults.length === 0 ? (
+              <Alert>
+                <Info size={20} weight="duotone" />
+                <AlertDescription>
+                  {transcriptions.filter(t => t.status === 'completed').length === 0 ? (
+                    <>
+                      <p className="font-medium mb-1">No transcriptions available</p>
+                      <p className="text-sm">
+                        Generate transcriptions from your recorded calls to search through them.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium mb-1">No results found</p>
+                      <p className="text-sm">
+                        Try adjusting your search query or filters to find what you're looking for.
+                      </p>
+                    </>
+                  )}
+                </AlertDescription>
+              </Alert>
+            ) : (
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-3">
                 {searchResults.map((result, index) => {
@@ -505,10 +559,20 @@ export function TranscriptionSearch({ transcriptions, onSelectTranscription }: T
                   )
                 })}
               </div>
-            </ScrollArea>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              </ScrollArea>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {showAdvancedFilters && (
+        <AdvancedSearchFilters
+          filters={advancedFilters}
+          onFiltersChange={setAdvancedFilters}
+          availableParticipants={availableParticipants}
+          showCompactMode={false}
+        />
+      )}
+    </div>
   )
 }

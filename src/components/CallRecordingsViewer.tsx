@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
 import {
   Play,
   Pause,
@@ -20,10 +21,14 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   Sparkle,
+  MagnifyingGlass,
+  X,
+  Funnel,
 } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/utils'
 import type { RecordingMetadata } from '@/hooks/use-call-recording'
 import { toast } from 'sonner'
+import { AdvancedSearchFilters, type AdvancedFilters } from './AdvancedSearchFilters'
 
 interface CallRecordingsViewerProps {
   recordings: RecordingMetadata[]
@@ -272,6 +277,111 @@ export function CallRecordingsViewer({
   } | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [generatingTranscriptionId, setGeneratingTranscriptionId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    dateRange: { from: undefined, to: undefined },
+    participants: [],
+    participantCount: { min: undefined, max: undefined },
+    callType: 'all',
+    duration: { min: undefined, max: undefined },
+    hasTranscription: undefined,
+    sentiment: 'all',
+    sortBy: 'date',
+    sortOrder: 'desc',
+  })
+
+  const availableParticipants = useMemo(() => {
+    const participants = new Set<string>()
+    recordings.forEach((r) => {
+      r.participants.forEach((p) => {
+        if (p.userName) {
+          participants.add(p.userName)
+        }
+      })
+    })
+    return Array.from(participants).sort()
+  }, [recordings])
+
+  const filteredRecordings = useMemo(() => {
+    let results = [...recordings]
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      results = results.filter((r) => {
+        const participantNames = r.participants.map(p => p.userName.toLowerCase()).join(' ')
+        const dateStr = formatDate(new Date(r.timestamp).toISOString()).toLowerCase()
+        return participantNames.includes(query) || dateStr.includes(query)
+      })
+    }
+
+    if (advancedFilters.dateRange.from) {
+      results = results.filter(r => {
+        const recordingDate = new Date(r.timestamp)
+        return recordingDate >= advancedFilters.dateRange.from!
+      })
+    }
+
+    if (advancedFilters.dateRange.to) {
+      results = results.filter(r => {
+        const recordingDate = new Date(r.timestamp)
+        const endOfDay = new Date(advancedFilters.dateRange.to!)
+        endOfDay.setHours(23, 59, 59, 999)
+        return recordingDate <= endOfDay
+      })
+    }
+
+    if (advancedFilters.participants.length > 0) {
+      results = results.filter(r => {
+        const recordingParticipants = r.participants.map(p => p.userName)
+        return advancedFilters.participants.some(p => recordingParticipants.includes(p))
+      })
+    }
+
+    if (advancedFilters.participantCount.min !== undefined) {
+      results = results.filter(r => r.participantCount >= advancedFilters.participantCount.min!)
+    }
+
+    if (advancedFilters.participantCount.max !== undefined) {
+      results = results.filter(r => r.participantCount <= advancedFilters.participantCount.max!)
+    }
+
+    if (advancedFilters.duration.min !== undefined) {
+      results = results.filter(r => r.duration >= advancedFilters.duration.min! * 60)
+    }
+
+    if (advancedFilters.duration.max !== undefined) {
+      results = results.filter(r => r.duration <= advancedFilters.duration.max! * 60)
+    }
+
+    if (advancedFilters.callType !== 'all') {
+      if (advancedFilters.callType === 'group') {
+        results = results.filter(r => r.participantCount > 2)
+      } else if (advancedFilters.callType === 'video') {
+        results = results.filter(r => r.callType === 'video')
+      } else if (advancedFilters.callType === 'audio') {
+        results = results.filter(r => r.callType === 'voice')
+      }
+    }
+
+    if (advancedFilters.hasTranscription === true && hasTranscription) {
+      results = results.filter(r => hasTranscription(r.id))
+    }
+
+    return results.sort((a, b) => {
+      const sortOrder = advancedFilters.sortOrder === 'asc' ? 1 : -1
+      switch (advancedFilters.sortBy) {
+        case 'date':
+          return (b.timestamp - a.timestamp) * sortOrder
+        case 'duration':
+          return (b.duration - a.duration) * sortOrder
+        case 'participants':
+          return (b.participantCount - a.participantCount) * sortOrder
+        default:
+          return 0
+      }
+    })
+  }, [recordings, searchQuery, advancedFilters, hasTranscription])
 
   const handlePlayRecording = (recording: RecordingMetadata) => {
     const blob = getRecordingBlob(recording.id)
@@ -343,32 +453,81 @@ export function CallRecordingsViewer({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <VideoCamera size={24} weight="duotone" />
-          Call Recordings
-        </CardTitle>
-        <CardDescription>
-          View and manage your recorded group calls
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {recordings.length === 0 ? (
-          <Alert>
-            <Info size={20} weight="duotone" />
-            <AlertDescription>
-              <p className="font-medium mb-1">No recordings yet</p>
-              <p className="text-sm">
-                Start recording during a group call to save and replay it later. 
-                Recordings will appear here for playback and download.
-              </p>
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-3">
-              {recordings.map((recording, index) => (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <VideoCamera size={24} weight="duotone" />
+            Call Recordings
+          </CardTitle>
+          <CardDescription>
+            View and manage your recorded group calls ({filteredRecordings.length} of {recordings.length} recordings)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <MagnifyingGlass 
+                size={20} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+              />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search recordings by participants, date..."
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                >
+                  <X size={16} />
+                </Button>
+              )}
+            </div>
+            <Button
+              variant={showAdvancedFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="gap-2"
+            >
+              <Funnel size={16} weight={showAdvancedFilters ? "fill" : "regular"} />
+              Filters
+            </Button>
+          </div>
+
+          {filteredRecordings.length === 0 && recordings.length > 0 && (
+            <Alert>
+              <Info size={20} weight="duotone" />
+              <AlertDescription>
+                <p className="font-medium mb-1">No recordings match your filters</p>
+                <p className="text-sm">
+                  Try adjusting your search query or filters.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {filteredRecordings.length === 0 && recordings.length === 0 && (
+            <Alert>
+              <Info size={20} weight="duotone" />
+              <AlertDescription>
+                <p className="font-medium mb-1">No recordings yet</p>
+                <p className="text-sm">
+                  Start recording during a group call to save and replay it later. 
+                  Recordings will appear here for playback and download.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {filteredRecordings.length > 0 && (
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-3">
+                {filteredRecordings.map((recording, index) => (
                 <div key={recording.id}>
                   <Card className="hover:bg-accent/50 transition-colors">
                     <CardContent className="pt-6">
@@ -489,13 +648,23 @@ export function CallRecordingsViewer({
                       </div>
                     </CardContent>
                   </Card>
-                  {index < recordings.length - 1 && <Separator className="my-3" />}
+                  {index < filteredRecordings.length - 1 && <Separator className="my-3" />}
                 </div>
               ))}
             </div>
           </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+
+      {showAdvancedFilters && (
+        <AdvancedSearchFilters
+          filters={advancedFilters}
+          onFiltersChange={setAdvancedFilters}
+          availableParticipants={availableParticipants}
+          showCompactMode={false}
+        />
+      )}
+    </div>
   )
 }
