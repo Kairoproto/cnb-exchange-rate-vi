@@ -10,6 +10,7 @@ import { CurrencyConverter } from '@/components/CurrencyConverter'
 import { CurrencyTrendChart } from '@/components/CurrencyTrendChart'
 import { ComparisonDateSelector } from '@/components/ComparisonDateSelector'
 import { ComparisonTemplates } from '@/components/ComparisonTemplates'
+import { CustomTemplateBuilder } from '@/components/CustomTemplateBuilder'
 import { RateComparisonTable } from '@/components/RateComparisonTable'
 import { ComparisonReportExport } from '@/components/ComparisonReportExport'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -259,6 +260,11 @@ function App() {
               </div>
 
               <ComparisonTemplates 
+                onApplyTemplate={handleApplyTemplate}
+                isLoading={comparison.isLoading}
+              />
+
+              <CustomTemplateBuilder
                 onApplyTemplate={handleApplyTemplate}
                 isLoading={comparison.isLoading}
               />
