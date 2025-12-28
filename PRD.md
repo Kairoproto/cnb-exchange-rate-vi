@@ -460,6 +460,27 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Transcription Search Tab Integration**: Seamlessly integrated into 5-tab Collaborate dashboard
 - **Transcription Search State Persistence**: Preserve search query when switching tabs (if desired)
 - **Transcription Search Keyboard Navigation**: Support arrow keys and Enter for result selection
+- **Smart Preset Recommendations No Usage**: Show AI-generated and time-based recommendations even without usage history
+- **Smart Preset Recommendations AI Failure**: Fall back to time-based and usage patterns if AI generation fails
+- **Smart Preset Recommendations Empty Presets**: Still generate contextual suggestions even when no saved presets exist
+- **Smart Preset Recommendations Score Normalization**: Ensure all recommendation scores stay within 1-10 range
+- **Smart Preset Recommendations Duplicate Detection**: Prevent showing same recommendation multiple times
+- **Smart Preset Recommendations Usage History Overflow**: Limit usage history to last 100 entries automatically
+- **Smart Preset Recommendations Time Zone**: Correctly handle user's local time zone for time-based suggestions
+- **Smart Preset Recommendations Similar Filters Empty**: Hide similar recommendations section when no current filters active
+- **Smart Preset Recommendations Similarity Threshold**: Only show similar presets with 30-90% match to avoid noise
+- **Smart Preset Recommendations Refresh Rate Limit**: Prevent excessive AI calls with loading state
+- **Smart Preset Recommendations Stale Data**: Ensure recommendations update when preset library changes
+- **Smart Preset Recommendations Save Dialog Pre-fill**: Auto-populate fields from recommendation data
+- **Smart Preset Recommendations Apply Feedback**: Toast shows which recommendation was applied
+- **Smart Preset Recommendations Mobile Scroll**: Touch-friendly scrolling in recommendations list
+- **Smart Preset Recommendations Type Badges**: Correctly identify and display recommendation source
+- **Smart Preset Recommendations Weekend Context**: Adjust Friday recommendations to account for weekend gap
+- **Smart Preset Recommendations Holiday Awareness**: General time-based suggestions work for any day
+- **Smart Preset Recommendations Large JSON**: Handle AI responses with nested filter objects correctly
+- **Smart Preset Recommendations Malformed AI Response**: Gracefully handle invalid JSON from AI
+- **Smart Preset Recommendations Empty AI Array**: Show fallback recommendations when AI returns empty list
+- **Smart Preset Recommendations Context Length**: Limit prompt context to prevent token overflow
 - **Active Viewers Self-Exclusion**: Never show current user in their own active viewers list
 - **Active Viewers Timestamp Accuracy**: Update activity status every 10 seconds automatically
 - **Active Viewers Threshold**: Active = last 2 minutes, Recent = last 30 minutes
@@ -770,10 +791,10 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
 
 
 ### Filter Preset Management System
-- **Functionality**: Allows users to save, name, and reuse filter configurations across all sections of the application
-- **Purpose**: Enables power users to quickly switch between frequently-used filter combinations, improving efficiency and workflow
-- **Trigger**: User configures filters in any section (Exchange Rate Table, Advanced Search, Comparison, etc.) and clicks save preset button
-- **Progression**: User applies filters → Clicks "Save Preset" button → Dialog opens → Enters preset name, description (optional), and category → Saves → Preset stored persistently → Can load preset later from any compatible section → Filters automatically applied
+- **Functionality**: Allows users to save, name, and reuse filter configurations across all sections of the application, with AI-powered smart recommendations based on usage patterns, time of day, and similar filter combinations
+- **Purpose**: Enables power users to quickly switch between frequently-used filter combinations, improving efficiency and workflow; provides intelligent suggestions to discover new useful filtering strategies
+- **Trigger**: User configures filters in any section (Exchange Rate Table, Advanced Search, Comparison, etc.) and clicks save preset button; recommendations appear automatically based on context and usage patterns
+- **Progression**: User applies filters → Clicks "Save Preset" button → Dialog opens → Enters preset name, description (optional), and category → Saves → Preset stored persistently → Can load preset later from any compatible section → Filters automatically applied → Smart Recommendations card displays AI-powered suggestions → Shows usage-based recommendations (frequent patterns at specific times/days) → Shows time-based recommendations (morning reviews, end-of-day checks, weekly overviews) → Shows similar preset recommendations when user has active filters → User can apply recommendation instantly → User can save recommendation as new preset with pre-filled details → AI analyzes user's preset patterns and generates contextual suggestions → Recommendations update automatically based on time and behavior → Usage tracking records when presets are applied → Generates insights like "You often use this preset on Mondays around 9:00"
 - **Success criteria**: 
   - Presets save successfully with all filter parameters
   - Presets persist across browser sessions using `useKV` hook
@@ -785,6 +806,24 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Quick preset selector provides fast access to frequently-used presets
   - Presets work across different tabs/sections where applicable
   - Mobile-friendly with responsive dialogs and touch targets
+  - Smart recommendations generate successfully using GPT-4o-mini
+  - Usage-based recommendations identify patterns (time of day, day of week)
+  - Time-based recommendations suggest relevant presets (morning review, afternoon check, weekly overview, Friday summary)
+  - Similar preset recommendations show filters close to current selection
+  - AI recommendations provide 3-5 contextual suggestions with reasons
+  - Recommendations include preset name, description, category, and filters
+  - Each recommendation shows type badge (AI Powered, Based on Usage, Time-Based, Similar Filters)
+  - Top recommendations marked with "Top Pick" badge (score ≥ 8)
+  - Apply button instantly loads recommended filters
+  - Save button converts recommendation to permanent preset
+  - Usage history stores last 100 preset applications with timestamp, day, hour
+  - Recommendations refresh on demand with animated loading state
+  - Empty state encourages first AI generation
+  - Recommendations sorted by relevance score (1-10)
+  - Intelligent reasons explain why each preset is suggested
+  - All recommendations persist across sessions
+  - Performance optimized for quick filtering and sorting
+  - Toast notifications confirm all actions
 
 ### Filter Preset Components & Features
 - **FilterPresetManager**: Full-featured preset management interface with:
@@ -831,3 +870,16 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
 - Empty state messaging concise and actionable on small screens
 - Preset badges and metadata remain readable on narrow displays
 - "Presets" tab included in main navigation with proper responsive text sizing
+- Smart recommendations card fully responsive on mobile
+- Recommendation items stack vertically with full-width layout on small screens
+- Recommendation badges wrap appropriately on narrow displays
+- Apply and Save buttons maintain touch targets (min 44px height)
+- Refresh button accessible in mobile header
+- AI generation button full-width on very small screens
+- Recommendation type icons clearly visible on mobile
+- "Top Pick" badges don't overflow on narrow screens
+- Scroll area works smoothly with touch gestures
+- Empty state illustration and text scales appropriately
+- All dialogs (save recommendation) scrollable and keyboard-friendly on mobile
+- Usage pattern tracking works across all mobile interactions
+- Toast notifications positioned properly on mobile screens

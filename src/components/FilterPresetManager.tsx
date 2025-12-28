@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useFilterPresets, FilterPreset } from '@/hooks/use-filter-presets'
+import { PresetRecommendations } from '@/components/PresetRecommendations'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,7 @@ import {
   Clock,
   Tag,
   Plus,
+  Sparkle,
 } from '@phosphor-icons/react'
 import { cn, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -172,28 +175,34 @@ export function FilterPresetManager({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FolderOpen size={24} weight="duotone" className="text-primary" />
+    <div className="space-y-6">
+      <PresetRecommendations 
+        onApplyPreset={onApplyPreset}
+        currentFilters={currentFilters}
+      />
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FolderOpen size={24} weight="duotone" className="text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">My Filter Presets</CardTitle>
+                <CardDescription>
+                  Save and reuse your favorite filter configurations
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-xl">Filter Presets</CardTitle>
-              <CardDescription>
-                Save and reuse your favorite filter configurations
-              </CardDescription>
-            </div>
-          </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus size={18} weight="bold" />
-                Save Current
-              </Button>
-            </DialogTrigger>
+            
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus size={18} weight="bold" />
+                  Save Current
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Save Filter Preset</DialogTitle>
@@ -390,6 +399,7 @@ export function FilterPresetManager({
           </ScrollArea>
         )}
       </CardContent>
+      </Card>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
@@ -454,6 +464,6 @@ export function FilterPresetManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   )
 }
