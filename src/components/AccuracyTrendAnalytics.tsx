@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { AccuracyReportExport } from '@/components/AccuracyReportExport'
 import { 
   ChartLine, 
   Target,
@@ -202,16 +203,19 @@ export function AccuracyTrendAnalytics({ history }: AccuracyTrendAnalyticsProps)
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg">
-              <ChartLine size={24} weight="duotone" className="text-primary" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg">
+                <ChartLine size={24} weight="duotone" className="text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Accuracy Trend Analytics</CardTitle>
+                <CardDescription className="text-base mt-1">
+                  Performance metrics across {totalPredictions} predictions
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl">Accuracy Trend Analytics</CardTitle>
-              <CardDescription className="text-base mt-1">
-                Performance metrics across {totalPredictions} predictions
-              </CardDescription>
-            </div>
+            <AccuracyReportExport history={history} variant="default" size="lg" />
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

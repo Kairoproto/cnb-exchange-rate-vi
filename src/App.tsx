@@ -20,6 +20,7 @@ import { AiReportGenerator } from '@/components/AiReportGenerator'
 import { AiCurrencyPredictions } from '@/components/AiCurrencyPredictions'
 import { PredictionHistoryViewer } from '@/components/PredictionHistoryViewer'
 import { AccuracyTrendAnalytics } from '@/components/AccuracyTrendAnalytics'
+import { ReportPreview } from '@/components/ReportPreview'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -323,6 +324,8 @@ function App() {
             <TabsContent value="history" className="space-y-8 mt-8">
               {data && (
                 <>
+                  <ReportPreview history={predictionHistory} />
+                  
                   <AccuracyTrendAnalytics history={predictionHistory} />
                   
                   <PredictionHistoryViewer 
