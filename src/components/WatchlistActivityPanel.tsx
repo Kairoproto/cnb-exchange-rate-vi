@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Eye, Circle, Crown, PencilSimple, Eye as EyeIcon, Clock, Users } from '@phosphor-icons/react'
+import { Eye, Circle, Crown, PencilSimple, Eye as EyeIcon, Clock, Users, Cursor } from '@phosphor-icons/react'
 import { formatDistanceToNow } from 'date-fns'
 import { SimulateActivity } from './SimulateActivity'
 import type { SharedWatchlist, WatchlistMember } from '@/hooks/use-shared-watchlists'
@@ -11,9 +11,10 @@ import type { SharedWatchlist, WatchlistMember } from '@/hooks/use-shared-watchl
 interface WatchlistActivityPanelProps {
   watchlist: SharedWatchlist
   currentUserId: string
+  activeCursorCount?: number
 }
 
-export function WatchlistActivityPanel({ watchlist, currentUserId }: WatchlistActivityPanelProps) {
+export function WatchlistActivityPanel({ watchlist, currentUserId, activeCursorCount = 0 }: WatchlistActivityPanelProps) {
   const [activeMembers, setActiveMembers] = useState<WatchlistMember[]>([])
   const [recentMembers, setRecentMembers] = useState<WatchlistMember[]>([])
   const [now, setNow] = useState(Date.now())
@@ -94,6 +95,25 @@ export function WatchlistActivityPanel({ watchlist, currentUserId }: WatchlistAc
       </CardHeader>
       <CardContent className="space-y-6">
         <SimulateActivity watchlistId={watchlist.id} />
+        
+        {activeCursorCount > 0 && (
+          <div className="p-3 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <Cursor size={20} weight="duotone" className="text-primary" />
+              </div>
+              <div>
+                <div className="font-semibold text-sm flex items-center gap-2">
+                  Live Cursor Tracking Active
+                  <Circle size={10} weight="fill" className="text-accent animate-pulse" />
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {activeCursorCount} team {activeCursorCount === 1 ? 'member' : 'members'} hovering in real-time
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {activeMembers.length > 0 && (
           <div className="space-y-3">

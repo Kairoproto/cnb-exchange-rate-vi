@@ -7,8 +7,12 @@ import { SharedWatchlistManager } from './SharedWatchlistManager'
 import { WatchlistInvites } from './WatchlistInvites'
 import { PublicWatchlistsBrowser } from './PublicWatchlistsBrowser'
 import { WatchlistActivityPanel } from './WatchlistActivityPanel'
+import { CursorTrackingInfo } from './CursorTrackingInfo'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useSharedWatchlists, type SharedWatchlist } from '@/hooks/use-shared-watchlists'
+import { useCursorTracking } from '@/hooks/use-cursor-tracking'
+import { LiveCursorsOverlay } from './LiveCursor'
+import { ActiveCursorsIndicator } from './ActiveCursorsIndicator'
 
 interface CollaborationDashboardProps {
   onWatchlistSelect: (currencies: string[], watchlist: SharedWatchlist | null) => void
@@ -19,6 +23,10 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
   const [selectedWatchlist, setSelectedWatchlist] = useState<SharedWatchlist | null>(null)
   const [currentUserId, setCurrentUserId] = useState('')
   const { watchlists } = useSharedWatchlists()
+  const { cursors } = useCursorTracking(
+    selectedWatchlist?.id || null,
+    selectedWatchlist !== null
+  )
 
   useEffect(() => {
     const loadUser = async () => {
@@ -46,6 +54,13 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
 
   return (
     <div className="space-y-6">
+      {selectedWatchlist && (
+        <>
+          <LiveCursorsOverlay cursors={cursors} />
+          <ActiveCursorsIndicator cursors={cursors} />
+        </>
+      )}
+      
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -66,6 +81,8 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
           Shared watchlists allow you to track currencies collaboratively. Create private watchlists for your team or public ones for the community. Invite members with different permission levels (Owner, Editor, Viewer) to control who can modify your watchlists.
         </AlertDescription>
       </Alert>
+
+      <CursorTrackingInfo />
 
       <WatchlistInvites />
 
@@ -98,6 +115,7 @@ export function CollaborationDashboard({ onWatchlistSelect }: CollaborationDashb
             <WatchlistActivityPanel 
               watchlist={selectedWatchlist} 
               currentUserId={currentUserId}
+              activeCursorCount={cursors.length}
             />
           </div>
         )}
