@@ -16,6 +16,7 @@ interface UseComparisonRatesResult {
   addDate: (date: string) => Promise<void>
   removeDate: (date: string) => void
   clear: () => void
+  refetchAll: () => Promise<void>
 }
 
 export function useComparisonRates(): UseComparisonRatesResult {
@@ -67,6 +68,31 @@ export function useComparisonRates(): UseComparisonRatesResult {
     setIsLoading(false)
   }, [])
 
+  const refetchAll = useCallback(async () => {
+    if (comparisons.length === 0) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const promises = comparisons.map(comp => 
+        fetchExchangeRates(comp.date).then(result => ({ date: comp.date, data: result }))
+      )
+      const results = await Promise.all(promises)
+      setComparisons(results.sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      ))
+    } catch (err) {
+      if (err instanceof CNBApiError) {
+        setError(err.message)
+      } else {
+        setError('An unexpected error occurred while refreshing comparison data')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [comparisons])
+
   return {
     comparisons,
     isLoading,
@@ -74,6 +100,7 @@ export function useComparisonRates(): UseComparisonRatesResult {
     addDate,
     removeDate,
     clear,
+    refetchAll,
   }
 }
 

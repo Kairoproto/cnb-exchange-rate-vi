@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useExchangeRates } from '@/hooks/use-exchange-rates'
 import { useComparisonRates } from '@/hooks/use-comparison-rates'
+import { useFavorites } from '@/hooks/use-favorites'
 import { ExchangeRateTable } from '@/components/ExchangeRateTable'
 import { ExchangeRateTableSkeleton } from '@/components/ExchangeRateTableSkeleton'
 import { CurrencyConverter } from '@/components/CurrencyConverter'
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck } from '@phosphor-icons/react'
+import { ArrowsClockwise, Bank, Warning, ChartLine, CalendarCheck, Star } from '@phosphor-icons/react'
 import { formatDate } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
@@ -22,8 +23,10 @@ type ViewMode = 'current' | 'comparison'
 function App() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [viewMode, setViewMode] = useState<ViewMode>('current')
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const { data, isLoading, error, refetch } = useExchangeRates(selectedDate)
   const comparison = useComparisonRates()
+  const { favorites, clearFavorites } = useFavorites()
 
   const handleRefresh = async () => {
     if (viewMode === 'current') {
@@ -125,8 +128,22 @@ function App() {
                     <div className="flex items-center gap-3">
                       {data && (
                         <div className="text-sm text-muted-foreground">
-                          {data.rates.length} currencies
+                          {showFavoritesOnly 
+                            ? `${(favorites || []).length} favorite${(favorites || []).length !== 1 ? 's' : ''}`
+                            : `${data.rates.length} currencies`
+                          }
                         </div>
+                      )}
+                      {(favorites || []).length > 0 && (
+                        <Button
+                          variant={showFavoritesOnly ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                          className="gap-2"
+                        >
+                          <Star size={16} weight={showFavoritesOnly ? "fill" : "regular"} />
+                          {showFavoritesOnly ? 'Show All' : 'Watchlist'}
+                        </Button>
                       )}
                       {data && (
                         <ExportMenu data={data} variant="ghost" size="sm" />
@@ -156,7 +173,22 @@ function App() {
                   {isLoading && <ExchangeRateTableSkeleton />}
 
                   {!isLoading && !error && data && (
-                    <ExchangeRateTable rates={data.rates} />
+                    <>
+                      {showFavoritesOnly && (favorites || []).length === 0 ? (
+                        <div className="text-center py-12">
+                          <Star size={48} weight="duotone" className="mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">No Favorites Yet</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Click the star icon next to any currency to add it to your watchlist
+                          </p>
+                          <Button variant="outline" onClick={() => setShowFavoritesOnly(false)}>
+                            View All Currencies
+                          </Button>
+                        </div>
+                      ) : (
+                        <ExchangeRateTable rates={data.rates} showFavoritesOnly={showFavoritesOnly} />
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>

@@ -68,6 +68,13 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Progression**: User switches to comparison tab → Selects first date (becomes baseline) → Adds additional dates using calendar picker or quick buttons (yesterday, 1 week ago, 1 month ago, 3 months ago) → Each date is fetched from CNB API → Comparison table displays with all currencies → Shows rate values and percentage changes from baseline → Color-coded indicators (green=increase, red=decrease) → User can filter currencies, sort by country/code → Remove individual dates or clear all → Refresh all comparison data
 - **Success criteria**: Up to 5 dates can be selected; weekends auto-excluded; percentage changes accurately calculated from baseline date; color-coded trend indicators (green up, red down, gray neutral); sortable and filterable comparison table; smooth loading states with toast notifications; individual date removal without refetching; clear visual distinction between baseline and comparison dates; mobile-responsive with proper date badge wrapping
 
+### Currency Favorites and Watchlist
+- **Functionality**: Users can mark specific currencies as favorites by clicking a star icon, creating a personalized watchlist for quick access to preferred currencies
+- **Purpose**: Streamlines workflow for users who regularly monitor specific currencies, eliminating the need to scroll through the full list
+- **Trigger**: User clicks star icon next to any currency in the exchange rate table
+- **Progression**: User views exchange rate table → Clicks star icon on desired currency → Currency added to favorites (star fills with yellow color) → User clicks "Watchlist" button to filter view → Only favorited currencies display → User can toggle back to "Show All" → Favorites persist across sessions
+- **Success criteria**: Star icons visible and interactive on every currency row; instant visual feedback (filled star = favorited, outline = not favorited); watchlist button appears only when favorites exist; watchlist filter shows only favorited currencies; empty state with helpful message when watchlist is empty; favorites persist using useKV storage; yellow star color for visibility; smooth transitions between all/watchlist views
+
 ## Edge Case Handling
 
 - **API Timeout/Network Failure**: Display friendly error message with retry button, automatic proxy fallback, and troubleshooting hints
@@ -96,6 +103,9 @@ A professional Czech National Bank (CNB) Exchange Rate Viewer application that d
 - **Comparison Mode - Single Date**: Show only rate values without percentage changes when comparing single date
 - **Comparison Mode - API Failures**: Handle individual date fetch failures gracefully without breaking entire comparison
 - **Comparison Mode - Tab Switching**: Preserve both current rates and comparison data when switching between tabs
+- **Favorites Empty State**: Show helpful message when watchlist filter is active but no favorites exist
+- **Favorites Persistence**: Ensure favorites survive page refreshes and session changes using KV storage
+- **Star Icon Interaction**: Provide immediate visual feedback when toggling favorites without page reload
 
 ## Design Direction
 
@@ -188,6 +198,7 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - X for remove date badges
   - Trash for clear all comparison dates
   - Info for informational alerts
+  - Star (outline/filled) for favorites/watchlist feature with yellow color for filled state
 - **Spacing**: 
   - Container padding: p-6 (24px)
   - Card spacing: gap-6 between major sections
@@ -211,3 +222,5 @@ Subtle fade-ins for data appearing (200ms), smooth loading spinner rotation, and
   - Quick-add buttons stack vertically on very small screens
   - Comparison table remains horizontally scrollable with fixed currency column
   - Tab navigation switches to full-width buttons on mobile
+  - Watchlist button and favorite stars remain accessible with proper touch targets
+  - Star icons in table maintain 44px minimum touch area on mobile
