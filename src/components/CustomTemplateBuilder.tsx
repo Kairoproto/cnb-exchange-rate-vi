@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Plus, CalendarDots, Trash, PencilSimple, Check, X, FloppyDisk, Star } from '@phosphor-icons/react'
+import { Plus, CalendarDots, Trash, PencilSimple, Check, X, FloppyDisk, Star, CopySimple } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -129,6 +129,20 @@ export function CustomTemplateBuilder({ onApplyTemplate, isLoading }: CustomTemp
           : template
       )
     )
+  }
+
+  const handleDuplicateTemplate = (template: CustomTemplate) => {
+    const duplicatedTemplate: CustomTemplate = {
+      id: `custom-${Date.now()}`,
+      name: `${template.name} (Copy)`,
+      description: template.description,
+      dates: [...template.dates],
+      createdAt: new Date().toISOString(),
+      isFavorite: false
+    }
+
+    setCustomTemplates((current) => [...(current || []), duplicatedTemplate])
+    toast.success('Template duplicated successfully')
   }
 
   const handleCloseBuilder = () => {
@@ -321,8 +335,18 @@ export function CustomTemplateBuilder({ onApplyTemplate, isLoading }: CustomTemp
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDuplicateTemplate(template)}
+                      className="p-1.5 h-auto text-muted-foreground hover:text-accent"
+                      title="Duplicate template"
+                    >
+                      <CopySimple size={18} weight="bold" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleEditTemplate(template)}
                       className="p-1.5 h-auto text-muted-foreground hover:text-primary"
+                      title="Edit template"
                     >
                       <PencilSimple size={18} weight="bold" />
                     </Button>
@@ -331,6 +355,7 @@ export function CustomTemplateBuilder({ onApplyTemplate, isLoading }: CustomTemp
                       size="sm"
                       onClick={() => setDeleteConfirmId(template.id)}
                       className="p-1.5 h-auto text-muted-foreground hover:text-destructive"
+                      title="Delete template"
                     >
                       <Trash size={18} weight="bold" />
                     </Button>

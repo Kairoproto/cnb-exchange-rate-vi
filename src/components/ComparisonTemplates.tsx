@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, ChartLine, Lightning, Rocket } from '@phosphor-icons/react'
+import { Calendar, ChartLine, Lightning, Rocket, CopySimple } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { useKV } from '@github/spark/hooks'
+import { toast } from 'sonner'
 
 interface ComparisonTemplate {
   id: string
@@ -9,6 +11,15 @@ interface ComparisonTemplate {
   description: string
   icon: typeof Calendar
   dates: string[]
+}
+
+interface CustomTemplate {
+  id: string
+  name: string
+  description: string
+  dates: string[]
+  createdAt: string
+  isFavorite?: boolean
 }
 
 interface ComparisonTemplatesProps {
@@ -49,6 +60,8 @@ function getCurrentDate(): string {
 }
 
 export function ComparisonTemplates({ onApplyTemplate, isLoading }: ComparisonTemplatesProps) {
+  const [customTemplates, setCustomTemplates] = useKV<CustomTemplate[]>('custom-comparison-templates', [])
+
   const templates: ComparisonTemplate[] = [
     {
       id: 'weekly',
@@ -103,6 +116,20 @@ export function ComparisonTemplates({ onApplyTemplate, isLoading }: ComparisonTe
     },
   ]
 
+  const handleDuplicateTemplate = (template: ComparisonTemplate) => {
+    const newCustomTemplate: CustomTemplate = {
+      id: `custom-${Date.now()}`,
+      name: template.name,
+      description: template.description,
+      dates: [...template.dates],
+      createdAt: new Date().toISOString(),
+      isFavorite: false
+    }
+
+    setCustomTemplates((current) => [...(current || []), newCustomTemplate])
+    toast.success(`"${template.name}" saved as custom template`)
+  }
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -116,40 +143,54 @@ export function ComparisonTemplates({ onApplyTemplate, isLoading }: ComparisonTe
           {templates.map((template) => {
             const Icon = template.icon
             return (
-              <button
+              <div
                 key={template.id}
-                onClick={() => onApplyTemplate(template.dates)}
-                disabled={isLoading}
                 className={cn(
                   "group relative flex flex-col items-start gap-3 p-5 rounded-lg border-2 transition-all",
-                  "hover:border-primary hover:bg-primary/5 hover:shadow-md",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-transparent",
-                  "text-left"
+                  "hover:border-primary hover:bg-primary/5 hover:shadow-md"
                 )}
               >
-                <div className="flex items-center gap-3 w-full">
-                  <div className={cn(
-                    "p-2.5 rounded-lg bg-primary/10 text-primary transition-colors",
-                    "group-hover:bg-primary group-hover:text-primary-foreground"
-                  )}>
-                    <Icon size={24} weight="duotone" />
+                <div className="flex items-center justify-between gap-3 w-full">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={cn(
+                      "p-2.5 rounded-lg bg-primary/10 text-primary transition-colors shrink-0",
+                      "group-hover:bg-primary group-hover:text-primary-foreground"
+                    )}>
+                      <Icon size={24} weight="duotone" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
+                        {template.name}
+                      </h3>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
-                      {template.name}
-                    </h3>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDuplicateTemplate(template)}
+                    className="p-1.5 h-auto text-muted-foreground hover:text-accent shrink-0"
+                    title="Save as custom template"
+                  >
+                    <CopySimple size={18} weight="bold" />
+                  </Button>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {template.description}
                 </p>
-                <div className="mt-auto w-full pt-2 border-t">
+                <div className="mt-auto w-full pt-2 border-t space-y-2">
                   <div className="text-xs text-muted-foreground font-mono">
                     {template.dates.length} dates
                   </div>
+                  <Button
+                    onClick={() => onApplyTemplate(template.dates)}
+                    disabled={isLoading}
+                    className="w-full gap-2"
+                    size="sm"
+                  >
+                    Apply Template
+                  </Button>
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -161,11 +202,11 @@ export function ComparisonTemplates({ onApplyTemplate, isLoading }: ComparisonTe
             </div>
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium text-foreground">
-                Template Date Selection
+                Template Features
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 All templates automatically exclude weekends when the CNB doesn't publish rates. 
-                Dates are calculated from today's date and adjusted to the nearest weekday.
+                Click the <CopySimple size={14} weight="bold" className="inline mx-1" /> icon to save any template as a custom template that you can then modify and reuse.
               </p>
             </div>
           </div>
